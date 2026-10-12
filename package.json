@@ -1,0 +1,1 @@
+{"name":"atlantis-online","version":"1.0.0","description":"Survive: Escape from Atlantis — online multiplayer","main":"server.js","scripts":{"start":"node server.js","build":"python3 tools/build.py","test":"node tools/fuzz.js && node tools/ui-smoke.js && node tools/online-test.js"},"engines":{"node":">=18"},"dependencies":{"ws":"^8.18.0"}}
