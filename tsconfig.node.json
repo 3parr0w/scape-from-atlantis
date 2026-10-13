@@ -1,0 +1,17 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "strict": false,
+    "noImplicitAny": false,
+    "verbatimModuleSyntax": false,
+    "isolatedModules": false,
+    "module": "nodenext",
+    "moduleResolution": "nodenext",
+    "noEmit": false,
+    "outDir": "dist",
+    "rootDir": ".",
+    "sourceMap": false
+  },
+  "include": ["src/**/*.ts", "server.ts", "tools/**/*.ts"],
+  "exclude": ["src/ui.ts"]
+}
