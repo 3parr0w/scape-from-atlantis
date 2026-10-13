@@ -238,6 +238,41 @@
           overflow-y: auto;
         }
       }
+      /* ---- board animation ---- */
+      .tk .in { transform-box: fill-box; transform-origin: center; }
+      .pop { animation: pop 0.5s cubic-bezier(0.3, 1.6, 0.5, 1); }
+      @keyframes pop { 0% { transform: scale(0); opacity: 0; } 60% { transform: scale(1.3); opacity: 1; } 100% { transform: scale(1); } }
+      .cr { animation: bob 2.4s ease-in-out infinite; }
+      .bt { animation: bob 3.2s ease-in-out infinite; }
+      @keyframes bob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-1.8px); } }
+      .selr { animation: selr 1s ease-in-out infinite; transform-box: fill-box; transform-origin: center; }
+      @keyframes selr { 50% { transform: scale(1.18); } }
+      .hl { animation: hl 1.3s ease-in-out infinite; }
+      @keyframes hl { 50% { fill-opacity: 0.62; } }
+      .twk { animation: twk 3.4s ease-in-out infinite; opacity: 0; }
+      @keyframes twk { 50% { opacity: 0.9; } }
+      .rip { fill: none; stroke: #fff; stroke-width: 2; transform-box: fill-box; transform-origin: center; animation: rip 0.9s ease-out forwards; }
+      @keyframes rip { from { transform: scale(0.3); opacity: 0.85; } to { transform: scale(2.8); opacity: 0; } }
+      .gh { animation: sink 0.9s ease-in forwards; }
+      @keyframes sink { to { transform: translateY(9px) scale(0.4) rotate(25deg); opacity: 0; } }
+      .bub { fill: none; stroke: #dff6ff; stroke-width: 1; animation: bub 1s ease-out forwards; }
+      @keyframes bub { from { transform: translate(0, 0); opacity: 0.9; } to { transform: translate(var(--dx), -24px); opacity: 0; } }
+      .spk { animation: spk 1s ease-out forwards; }
+      @keyframes spk { from { transform: translate(0, 0) scale(1); opacity: 1; } to { transform: translate(var(--dx), -26px) scale(0.2); opacity: 0; } }
+      .tileout { transform-box: fill-box; transform-origin: center; animation: tout 0.8s ease-in forwards; }
+      @keyframes tout { 35% { transform: translateY(-9px) scale(1.06); } to { transform: translateY(-18px) scale(0.5); opacity: 0; } }
+      .whirl { animation: wh 1.6s ease-in forwards; }
+      @keyframes wh { from { transform: rotate(0) scale(1.3); opacity: 0.95; } to { transform: rotate(720deg) scale(0.15); opacity: 0; } }
+      .blast { transform-box: fill-box; transform-origin: center; animation: blast 0.9s ease-out forwards; }
+      @keyframes blast { from { transform: scale(0.2); opacity: 0.9; } to { transform: scale(3.2); opacity: 0; } }
+      .emb { animation: emb 1.8s ease-out forwards; }
+      @keyframes emb { from { transform: translate(0, 0); opacity: 1; } to { transform: translate(var(--dx), -80px); opacity: 0; } }
+      #die { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; pointer-events: none; z-index: 2; }
+      .dice { width: 112px; height: 112px; border-radius: 22px; background: #fff; box-shadow: 0 8px 28px #0008; display: flex; align-items: center; justify-content: center; animation: roll 1.2s cubic-bezier(0.2, 0.7, 0.3, 1) forwards; }
+      @keyframes roll { 0% { transform: translateY(-140px) rotate(0) scale(0.5); opacity: 0; } 25% { opacity: 1; } 70% { transform: translateY(0) rotate(600deg) scale(1.12); } 100% { transform: rotate(720deg) scale(1); opacity: 1; } }
+      .flash { position: absolute; inset: 0; background: radial-gradient(circle, #ffb03bcc, #ff3d0066 60%, transparent); animation: fl 1.4s ease-out forwards; }
+      @keyframes fl { 0% { opacity: 0; } 15% { opacity: 1; } 100% { opacity: 0; } }
+      @media (prefers-reduced-motion: reduce) { .cr, .bt, .twk, .hl, .selr { animation: none; } }
     </style>
   </head>
   <body>
@@ -245,11 +280,13 @@
       <div id="main">
         <div id="sc"></div>
         <div id="bw">
-          <svg id="bd" viewBox="0 0 750 580"></svg>
+          <div id="die"></div>
+        <svg id="bd" viewBox="0 0 750 580"></svg>
           <div id="zc">
             <button id="zi" aria-label="zoom in">＋</button
             ><button id="zo" aria-label="zoom out">－</button
             ><button id="zf" aria-label="fit">⤢</button>
+          <button id="zm" aria-label="sound">🔊</button>
           </div>
         </div>
       </div>
@@ -841,8 +878,129 @@
   var engine_default = api;
   globalThis.Atlantis = api;
 
+  // src/gfx.ts
+  var person = (col, rider = false) => {
+    const ln = rider ? "#3b2410" : "#fff";
+    return `<g class="mp"><ellipse cx="0" cy="9.4" rx="7" ry="2.2" fill="#00122a" opacity=".35"/><path d="M-3.4-3.2C-8.6-2.4-9 2.6-6.6 4.6L-4.4 5.2-6 9.2H6L4.4 5.2 6.6 4.6C9 2.6 8.6-2.4 3.4-3.2Z" fill="${col}" stroke="${ln}" stroke-width="1.5" stroke-linejoin="round"/><circle cx="0" cy="-7.2" r="3.9" fill="${col}" stroke="${ln}" stroke-width="1.5"/><ellipse cx="-3.1" cy="1.2" rx="1.2" ry="2.3" fill="#fff" opacity=".3"/><path d="M-2.3-9.4A3 3 0 0 1 .9-10.2" stroke="#fff" stroke-opacity=".65" stroke-width="1.2" fill="none" stroke-linecap="round"/></g>`;
+  };
+  var boat = () => `<g class="bt"><ellipse cx="0" cy="10.5" rx="15" ry="3" fill="#fff" opacity=".35"/><path d="M-13 3H13L8.5 10H-8.5Z" fill="#8a5a2b" stroke="#3b2410" stroke-width="1.4" stroke-linejoin="round"/><path d="M-11 5.2H11" stroke="#c99a5b" stroke-width="1.2"/><path d="M0 3V-14" stroke="#3b2410" stroke-width="1.6"/><path d="M1.5-13L11 1H1.5Z" fill="#fff" stroke="#8b97a8" stroke-width=".8" stroke-linejoin="round"/><path d="M-1.5-9L-9 1H-1.5Z" fill="#f4e7c6" stroke="#8b97a8" stroke-width=".8" stroke-linejoin="round"/><path d="M0-14L6-12.2 0-10.6Z" fill="#e63946"/></g>`;
+  var SERP2 = "M-15 7Q-10-5-5 3T5 3T11-5";
+  var serpent = () => `<g class="cr"><path d="${SERP2}" fill="none" stroke="#2d1245" stroke-width="7.4" stroke-linecap="round"/><path d="${SERP2}" fill="none" stroke="#9a5bd0" stroke-width="5" stroke-linecap="round"/><path d="${SERP2}" fill="none" stroke="#d9b8f5" stroke-width="1.4" stroke-linecap="round" stroke-dasharray="1 4"/><path d="M-9-3L-8-7 -6.2-3.6M-1-1.4L0-5.4 1.8-2M7-2L8-6 9.8-2.6" fill="#e0b8ff" stroke="#2d1245" stroke-width=".8" stroke-linejoin="round"/><ellipse cx="13" cy="-8" rx="5.6" ry="4.2" fill="#9a5bd0" stroke="#2d1245" stroke-width="1.4" transform="rotate(-25 13 -8)"/><circle cx="14.6" cy="-9.4" r="1.5" fill="#fff"/><circle cx="15" cy="-9.4" r=".7" fill="#111"/><path d="M17.6-7L20.6-8M17.6-7L20.6-5.6" stroke="#e63946" stroke-width="1" fill="none"/></g>`;
+  var shark = () => `<g class="cr"><path d="M-16 3C-9-5 4-6 13 1C9 6-6 8-16 3Z" fill="#7d93a8" stroke="#2a3a4a" stroke-width="1.4" stroke-linejoin="round"/><path d="M-14 4.2C-6 7 6 6 12 2.4C8 6-6 8-14 4.2Z" fill="#e6eef4"/><path d="M-3-3.4L1.5-12 5.4-2.6Z" fill="#6b8095" stroke="#2a3a4a" stroke-width="1.2" stroke-linejoin="round"/><path d="M-16 3L-21-3.5-19 3-21.5 9Z" fill="#6b8095" stroke="#2a3a4a" stroke-width="1.2" stroke-linejoin="round"/><circle cx="8.4" cy="-.4" r="1.2" fill="#111"/><path d="M12 1.6L10.6 3.2M10 2.4L8.8 4.2" stroke="#fff" stroke-width="1.2"/></g>`;
+  var whale = () => `<g class="cr"><path d="M-14 3C-13-9 9-10 14-1C16 4 11 9 1 9C-8 9-14 8-14 3Z" fill="#3f7fc2" stroke="#173a63" stroke-width="1.5" stroke-linejoin="round"/><path d="M-12 5C-4 9 8 9 13 3C10 8-3 10-12 5Z" fill="#cfe6fa"/><path d="M-14 3Q-19-3-22-4-20 0-17 2-20 6-23 9-17 7-13 5Z" fill="#3f7fc2" stroke="#173a63" stroke-width="1.3" stroke-linejoin="round"/><circle cx="8.5" cy="-1" r="1.3" fill="#fff"/><circle cx="8.8" cy="-1" r=".65" fill="#111"/><path d="M2-9Q2-14-1-16M2-9Q2-14 5-16" stroke="#bfe9ff" stroke-width="1.6" fill="none" stroke-linecap="round"/></g>`;
+  var creature = (t) => t === "shark" ? shark() : t === "whale" ? whale() : serpent();
+  var island = () => `<g pointer-events="none"><path d="M-22 6Q-16-3 0-2Q16-3 22 6Q0 15-22 6Z" fill="#f3d98d" stroke="#b8924a" stroke-width="1"/><path d="M-12 1Q-5-8 3-1Z" fill="#4aa653"/><path d="M5 4Q7-7 7-12" stroke="#8a5a2b" stroke-width="2.2" fill="none"/><path d="M7-12q-8-2-11 3M7-12q8-2 11 3M7-12q-2-8-9-6M7-12q3-7 10-4" stroke="#2f9e44" stroke-width="2.2" fill="none" stroke-linecap="round"/></g>`;
+  var anchor = () => `<g stroke="#ffd166" stroke-width="1.7" fill="none" stroke-linecap="round"><circle cx="0" cy="-6" r="2"/><path d="M0-4V8M-4-1H4M-8 3Q-6 8 0 8Q6 8 8 3"/></g>`;
+  var dieFace = (t) => `<svg viewBox="-26 -20 52 40" width="86" height="66">${creature(t)}</svg>`;
+  var at = (x, y, inner) => `<g style="transform:translate(${x}px,${y}px)">${inner}</g>`;
+  var rnd = (a) => (Math.random() - 0.5) * a;
+  var ripple = (x, y) => at(x, y, `<circle class="rip" r="10"/><circle class="rip" r="10" style="animation-delay:.18s"/>`);
+  var bubbles = (x, y) => at(x, y, [0, 1, 2, 3, 4].map((i) => `<circle class="bub" r="${1.4 + i % 3}" style="--dx:${rnd(16).toFixed(1)}px;animation-delay:${i * 0.09}s"/>`).join(""));
+  var sparkle = (x, y) => at(x, y, [0, 1, 2, 3, 4, 5].map((i) => `<path class="spk" d="M0-5L1.4-1.4 5 0 1.4 1.4 0 5-1.4 1.4-5 0-1.4-1.4Z" fill="#ffe066" style="--dx:${rnd(30).toFixed(1)}px;animation-delay:${i * 0.07}s"/>`).join(""));
+  var SP = (() => {
+    let d = "";
+    for (let i = 0; i <= 60; i++) {
+      const a = i * 0.35, r = 3 + i * 0.9;
+      d += (i ? "L" : "M") + (Math.cos(a) * r).toFixed(1) + " " + (Math.sin(a) * r).toFixed(1);
+    }
+    return d;
+  })();
+  var whirl = (x, y) => at(x, y, `<g class="whirl"><path d="${SP}" fill="none" stroke="#0a4a7a" stroke-width="6" stroke-linecap="round" opacity=".35" transform="rotate(40)"/><path d="${SP}" fill="none" stroke="#e8f8ff" stroke-width="3" stroke-linecap="round" opacity=".9"/></g>`);
+  var embers = (x, y) => at(x, y, `<circle class="blast" r="30" fill="#ff7b00"/>` + Array.from({ length: 16 }, (_, i) => `<circle class="emb" r="${(2 + Math.random() * 2).toFixed(1)}" fill="${["#ff9f1c", "#ff5400", "#ffd166"][i % 3]}" style="--dx:${rnd(90).toFixed(1)}px;animation-delay:${(i * 0.05).toFixed(2)}s"/>`).join(""));
+
+  // src/sfx.ts
+  var ctx = null;
+  var muted = false;
+  try {
+    muted = localStorage.getItem("atlantis-mute") === "1";
+  } catch {
+  }
+  var ac = () => {
+    if (muted || typeof AudioContext === "undefined") return null;
+    ctx ?? (ctx = new AudioContext());
+    if (ctx.state === "suspended") void ctx.resume();
+    return ctx;
+  };
+  function tone(f0, f1, dur, type = "sine", vol = 0.12, delay = 0) {
+    const c = ac();
+    if (!c) return;
+    const t = c.currentTime + delay, o = c.createOscillator(), g = c.createGain();
+    o.type = type;
+    o.frequency.setValueAtTime(f0, t);
+    o.frequency.exponentialRampToValueAtTime(Math.max(f1, 20), t + dur);
+    g.gain.setValueAtTime(vol, t);
+    g.gain.exponentialRampToValueAtTime(1e-4, t + dur);
+    o.connect(g).connect(c.destination);
+    o.start(t);
+    o.stop(t + dur + 0.02);
+  }
+  function noise(dur, vol = 0.1, hp = 800, delay = 0) {
+    const c = ac();
+    if (!c) return;
+    const n = Math.floor(c.sampleRate * dur), buf = c.createBuffer(1, n, c.sampleRate), d = buf.getChannelData(0);
+    for (let i = 0; i < n; i++) d[i] = (Math.random() * 2 - 1) * (1 - i / n);
+    const s = c.createBufferSource(), f = c.createBiquadFilter(), g = c.createGain(), t = c.currentTime + delay;
+    s.buffer = buf;
+    f.type = "highpass";
+    f.frequency.value = hp;
+    g.gain.value = vol;
+    s.connect(f).connect(g).connect(c.destination);
+    s.start(t);
+  }
+  function sfx(name) {
+    switch (name) {
+      case "move":
+        tone(420, 300, 0.09, "triangle", 0.08);
+        break;
+      case "take":
+        tone(300, 620, 0.12, "square", 0.05);
+        tone(620, 920, 0.1, "square", 0.045, 0.08);
+        break;
+      case "roll":
+        for (let i = 0; i < 6; i++) {
+          noise(0.05, 0.1, 1500, i * 0.09);
+          tone(300 + i * 40, 200, 0.05, "square", 0.03, i * 0.09);
+        }
+        break;
+      case "saved":
+        [523, 659, 784, 1047].forEach((f, i) => tone(f, f, 0.18, "sine", 0.1, i * 0.09));
+        break;
+      case "splash":
+        noise(0.3, 0.1, 1200);
+        break;
+      case "crash":
+        noise(0.5, 0.18, 200);
+        tone(200, 50, 0.5, "sawtooth", 0.08);
+        break;
+      case "whirl":
+        tone(700, 120, 1.1, "sine", 0.1);
+        noise(0.9, 0.05, 400);
+        break;
+      case "erupt":
+        noise(1.4, 0.22, 60);
+        tone(90, 30, 1.4, "sawtooth", 0.14);
+        break;
+      case "shield":
+        tone(500, 900, 0.25, "triangle", 0.1);
+        break;
+      case "turn":
+        tone(660, 660, 0.12, "sine", 0.1);
+        tone(880, 880, 0.16, "sine", 0.1, 0.12);
+        break;
+    }
+  }
+  var toggleMute = () => {
+    muted = !muted;
+    try {
+      localStorage.setItem("atlantis-mute", muted ? "1" : "0");
+    } catch {
+    }
+    return muted;
+  };
+  var isMuted = () => muted;
+
   // src/ui.ts
-  var { SAFE: SAFE2, DOCK: DOCK2, SERP: SERP2, NB: NB2, P: P2, CELLS: CELLS2 } = engine_default;
+  var { SAFE: SAFE2, DOCK: DOCK2, SERP: SERP3, NB: NB2, P: P2, CELLS: CELLS2 } = engine_default;
   var $ = (s) => document.querySelector(s);
   var R3 = Math.sqrt(3);
   var SZ = 28;
@@ -887,8 +1045,8 @@
     ]
   };
   var CE = { serp: "\u{1F40D}", shark: "\u{1F988}", whale: "\u{1F40B}" };
-  var hex = (x, y) => [0, 1, 2, 3, 4, 5].map(
-    (i) => (x + SZ * Math.cos(i * Math.PI / 3)).toFixed(1) + "," + (y + SZ * Math.sin(i * Math.PI / 3)).toFixed(1)
+  var hex = (x, y, r = SZ) => [0, 1, 2, 3, 4, 5].map(
+    (i) => (x + r * Math.cos(i * Math.PI / 3)).toFixed(1) + "," + (y + r * Math.sin(i * Math.PI / 3)).toFixed(1)
   ).join(" ");
   var POS = {};
   CELLS2.forEach((k) => {
@@ -986,30 +1144,43 @@
         break;
       }
       case "took":
+        fxTook(e);
         log(PN[e.pl] + " \u06A9\u0627\u0634\u06CC \u0628\u0631\u062F\u0627\u0634\u062A: " + (e.cont ? T[e.cont][1] : "(\u0645\u062E\u0641\u06CC)"));
         break;
       case "saved":
+        sfx("saved");
         log(PN[e.pl] + " \u06CC\u06A9 \u0646\u0641\u0631 \u0631\u0627 \u0646\u062C\u0627\u062A \u062F\u0627\u062F.");
         break;
       case "roll":
+        showDie(e.face);
+        sfx("roll");
         log(PN[e.pl] + " \u062A\u0627\u0633 \u0631\u06CC\u062E\u062A: " + CE[e.face]);
         break;
       case "cmove":
+        sfx("splash");
         log(PN[e.pl] + " " + CE[e.t] + " \u0631\u0627 \u062D\u0631\u06A9\u062A \u062F\u0627\u062F.");
         break;
       case "defended":
+        sfx("shield");
         log(PN[e.pl] + " \xAB" + T[e.tile][1] + "\xBB \u0631\u0627 \u0628\u0627\u0632\u06CC \u06A9\u0631\u062F.");
         break;
       case "capsize":
+        fxHit(e.k);
+        sfx("crash");
         log("\u0646\u0647\u0646\u06AF \u0642\u0627\u06CC\u0642\u06CC \u0631\u0627 \u0648\u0627\u0698\u06AF\u0648\u0646 \u06A9\u0631\u062F.");
         break;
       case "devoured":
+        fxHit(e.k);
+        sfx("crash");
         log("\u0645\u0627\u0631 \u062F\u0631\u06CC\u0627\u06CC\u06CC \u06CC\u06A9 \u0642\u0627\u06CC\u0642 \u0631\u0627 \u0628\u0644\u0639\u06CC\u062F.");
         break;
       case "turn":
         if (NET) {
           log("\u0646\u0648\u0628\u062A " + PN[e.cur] + " \u0627\u0633\u062A.");
-          if (e.cur === ME) document.title = "\u{1F514} \u0646\u0648\u0628\u062A \u062A\u0648\u0633\u062A";
+          if (e.cur === ME) {
+            document.title = "\u{1F514} \u0646\u0648\u0628\u062A \u062A\u0648\u0633\u062A";
+            sfx("turn");
+          }
           break;
         }
         ov(
@@ -1095,7 +1266,14 @@
       ph === "setP" ? { t: "placePerson", k, id: ui.pick ?? void 0 } : ph === "setB" ? { t: "placeBoat", k } : ph === "take" ? { t: "take", k } : ph === "creature" ? { t: "moveCreature", c: s.c, to: k } : ph === "play" ? m === "dolph" ? { t: "dolph", p: s.p, to: k } : m === "wind" ? { t: "wind", b: s.b, to: k } : { t: "mcreat", tile: m, c: s.c, to: k } : s.p !== void 0 ? { t: "movePerson", p: s.p, to: k } : { t: "moveBoat", b: s.b, to: k }
     );
   }
-  var DEFS = `<defs><radialGradient id="sea" cx="50%" cy="50%" r="75%"><stop offset="0" stop-color="#3b97d1"/><stop offset="1" stop-color="#0d466f"/></radialGradient><linearGradient id="gb" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#f8e8ae"/><stop offset="1" stop-color="#d8b565"/></linearGradient><linearGradient id="gf" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#78c46f"/><stop offset="1" stop-color="#34803f"/></linearGradient><linearGradient id="gm" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#c3c6d0"/><stop offset="1" stop-color="#6b6e80"/></linearGradient><linearGradient id="gs" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#a6e585"/><stop offset="1" stop-color="#4aa653"/></linearGradient><pattern id="wv" width="30" height="16" patternUnits="userSpaceOnUse"><path d="M0 8q7.5-7 15 0t15 0" fill="none" stroke="#fff" stroke-opacity=".14" stroke-width="1.5"/></pattern></defs><rect x="-300" y="-300" width="1350" height="1180" fill="url(#sea)"/><rect x="-300" y="-300" width="1350" height="1180" fill="url(#wv)"/>`;
+  var WAVE = (id, op, dx, dur) => `<pattern id="${id}" width="30" height="16" patternUnits="userSpaceOnUse"><path d="M0 8q7.5-7 15 0t15 0" fill="none" stroke="#fff" stroke-opacity="${op}" stroke-width="1.5"/><animateTransform attributeName="patternTransform" type="translate" from="0 0" to="${dx} 0" dur="${dur}s" repeatCount="indefinite"/></pattern>`;
+  var DEFS = `<defs><radialGradient id="sea" cx="50%" cy="50%" r="75%"><stop offset="0" stop-color="#3b97d1"/><stop offset="1" stop-color="#0d466f"/></radialGradient><linearGradient id="gb" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#f8e8ae"/><stop offset="1" stop-color="#d8b565"/></linearGradient><linearGradient id="gf" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#78c46f"/><stop offset="1" stop-color="#34803f"/></linearGradient><linearGradient id="gm" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#c3c6d0"/><stop offset="1" stop-color="#6b6e80"/></linearGradient><linearGradient id="gs" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#a6e585"/><stop offset="1" stop-color="#4aa653"/></linearGradient>${WAVE("wv", 0.14, 30, 9)}${WAVE("wv2", 0.08, -30, 14)}<filter id="blur" x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur stdDeviation="3.2"/></filter></defs><rect x="-300" y="-300" width="1350" height="1180" fill="url(#sea)"/><rect x="-300" y="-300" width="1350" height="1180" fill="url(#wv)"/><rect x="-300" y="-300" width="1350" height="1180" fill="url(#wv2)" transform="translate(0 8)"/>${[[90, 70], [610, 120], [300, 520], [690, 470], [120, 330], [470, 40], [40, 520]].map(([x, y], n) => `<circle class="twk" cx="${x}" cy="${y}" r="1.6" fill="#fff" style="animation-delay:${n * 0.7}s"/>`).join("")}`;
+  var LAYERS = false;
+  function layers() {
+    if (LAYERS) return;
+    LAYERS = true;
+    $("#bd").innerHTML = DEFS + '<g id="fg"></g><g id="fx" pointer-events="none"></g>';
+  }
   var tr = (x, y, z) => `<path d="M${x - 6 * z} ${y}l${6 * z}-${12 * z} ${6 * z} ${12 * z}zM${x - 5 * z} ${y - 5 * z}l${5 * z}-${11 * z} ${5 * z} ${11 * z}z" fill="#1f6b34"/><path d="M${x - 0.8} ${y}h1.6v3h-1.6z" fill="#5a3a1a"/>`;
   var deco = (t, h) => {
     const d = (h - 1) * 5;
@@ -1110,66 +1288,167 @@
     [0, -8],
     [0, 18]
   ];
+  var artOf = (kind, col) => kind === "person" ? person(col) : kind === "rider" ? `<g transform="scale(.86)">${person(col, true)}</g>` : kind === "boat" ? boat() : creature(kind);
+  var PREV = null;
+  var PTILES = null;
+  function resetGfx() {
+    PREV = null;
+    PTILES = null;
+    const fx = $("#fx");
+    if (fx) fx.innerHTML = "";
+  }
+  function fxAdd(html, ms = 1800) {
+    const fx = $("#fx");
+    if (!fx || typeof fx.insertAdjacentHTML !== "function") return;
+    const before = fx.childElementCount;
+    fx.insertAdjacentHTML("beforeend", html);
+    const added = Array.from(fx.children).slice(before);
+    setTimeout(() => added.forEach((e) => e.remove()), ms);
+  }
+  function diff(cur, tiles, fate) {
+    const prev = PREV, pt = PTILES;
+    PREV = cur;
+    PTILES = tiles;
+    if (!prev || !pt) return;
+    const fg = $("#fg");
+    let fx = "", moved = false;
+    const els = typeof fg.querySelectorAll === "function" ? fg.querySelectorAll(".tk") : [];
+    Array.from(els).forEach((el) => {
+      const tid = el.getAttribute("data-tid"), n = cur.get(tid), o = prev.get(tid), cr = n.kind === "serp" || n.kind === "shark" || n.kind === "whale";
+      const st = el.style;
+      if (!o) {
+        el.firstElementChild?.classList.add("pop");
+        if (cr) fx += ripple(n.x, n.y);
+      } else if (o.x !== n.x || o.y !== n.y) {
+        moved = true;
+        st.transition = "none";
+        st.transform = `translate(${o.x}px,${o.y}px)`;
+        el.getBoundingClientRect();
+        st.transition = "transform .45s cubic-bezier(.3,.7,.3,1)";
+        st.transform = `translate(${n.x}px,${n.y}px)`;
+        if (cr) fx += ripple(n.x, n.y);
+      }
+    });
+    prev.forEach((o, tid) => {
+      if (cur.has(tid)) return;
+      if (fate.get(tid) === "safe") {
+        fx += sparkle(o.x, o.y);
+        return;
+      }
+      fx += `<g style="transform:translate(${o.x}px,${o.y}px)"><g class="gh">${artOf(o.kind, o.col)}</g></g>` + bubbles(o.x, o.y);
+    });
+    for (const k in pt) {
+      if (k in tiles) continue;
+      const { x, y } = POS[k], gr = { b: "gb", f: "gf", m: "gm" }[pt[k]];
+      fx += `<g style="transform:translate(${x}px,${y}px)"><g class="tileout"><polygon points="${hex(0, 4)}" fill="#3a3a3a"/><polygon points="${hex(0, 0)}" fill="url(#${gr})" stroke="#fff" stroke-opacity=".5" stroke-width="1.5" stroke-linejoin="round"/><g transform="translate(0,-13) scale(.8)">${deco(pt[k], 1)}</g></g></g>`;
+    }
+    if (fx) fxAdd(fx);
+    if (moved) sfx("move");
+  }
+  function showDie(face) {
+    const d = $("#die");
+    if (!d) return;
+    d.innerHTML = `<div class="dice"><span id="df">${dieFace(face)}</span></div>`;
+    const faces = ["serp", "shark", "whale"];
+    let i = 0;
+    const t = setInterval(() => {
+      const f = $("#df");
+      if (f) f.innerHTML = dieFace(faces[i++ % 3]);
+    }, 90);
+    setTimeout(() => {
+      clearInterval(t);
+      const f = $("#df");
+      if (f) f.innerHTML = dieFace(face);
+    }, 750);
+    setTimeout(() => {
+      d.innerHTML = "";
+    }, 2100);
+  }
+  function fxTook(e) {
+    sfx("take");
+    const p = POS[e.k];
+    if (!p) return;
+    if (e.cont === "whirl") {
+      fxAdd(whirl(p.x, p.y), 2e3);
+      sfx("whirl");
+    } else if (e.cont === "volc") {
+      fxAdd(embers(p.x, p.y), 2600);
+      const d = $("#die");
+      if (d) d.innerHTML = '<div class="flash"></div>';
+      setTimeout(() => {
+        if (d) d.innerHTML = "";
+      }, 1500);
+      sfx("erupt");
+    }
+  }
+  function fxHit(k) {
+    const p = POS[k];
+    if (p) fxAdd(ripple(p.x, p.y) + bubbles(p.x, p.y));
+  }
   function render() {
     if (!S) return;
     const v = V(), me = actor(), DS = engine_default.dests(S, me, ui.sel || {}, ui.mode || void 0), sel = ui.sel || {};
-    let s = DEFS, sd = "", th = "";
+    let s = "", sd = "", th = "", fo = "";
     for (const k of CELLS2) {
       const { x, y } = POS[k];
       const t = v.tiles[k];
       if (t || SAFE2.includes(k)) {
         const c = t ? { b: "#a8863f", f: "#1f5a2c", m: "#444655" }[t.type] : "#2f7a3a";
+        fo += `<polygon points="${hex(x, y, SZ * 1.16)}" fill="#fff" stroke="#fff" stroke-width="5" stroke-linejoin="round"/>`;
         sd += `<polygon points="${hex(x + 3, y + 9)}" fill="#001a33" fill-opacity=".28" pointer-events="none"/>`;
         th += `<polygon points="${hex(x, y + 4)}" fill="${c}" stroke="${c}" stroke-width="3" stroke-linejoin="round" pointer-events="none"/>`;
       }
     }
-    s += sd + th;
+    s += (fo ? `<g filter="url(#blur)" opacity=".5" pointer-events="none">${fo}</g>` : "") + sd + th;
     for (const k of CELLS2) {
       const { x, y } = POS[k];
       const t = v.tiles[k];
       const sf = SAFE2.includes(k), h2 = P2(k).reduce((a, b) => a * 7 + b, 3) % 3;
       if (t) {
         const d = { b: "gb", f: "gf", m: "gm" }[t.type];
-        s += `<polygon data-k="${k}" points="${hex(x, y)}" fill="url(#${d})" stroke="#fff" stroke-opacity=".5" stroke-width="1.5" stroke-linejoin="round"/><g pointer-events="none" transform="translate(${x},${y - 13}) scale(.8)">${deco(t.type, h2)}</g>`;
+        s += `<polygon data-k="${k}" points="${hex(x, y)}" fill="url(#${d})" stroke="#fff" stroke-opacity=".5" stroke-width="1.5" stroke-linejoin="round"/><polygon points="${hex(x, y, SZ * 0.84)}" fill="none" stroke="#fff" stroke-opacity=".18" stroke-width="1.2" pointer-events="none"/><g pointer-events="none" transform="translate(${x},${y - 13}) scale(.8)">${deco(t.type, h2)}</g>`;
       } else if (sf) {
-        s += `<polygon data-k="${k}" points="${hex(x, y)}" fill="url(#gs)" stroke="#fff" stroke-width="2" stroke-linejoin="round"/><text x="${x}" y="${y}" font-size="26" text-anchor="middle" dominant-baseline="central" pointer-events="none">\u{1F3DD}\uFE0F</text>`;
+        s += `<polygon data-k="${k}" points="${hex(x, y)}" fill="url(#gs)" stroke="#fff" stroke-width="2" stroke-linejoin="round"/><g transform="translate(${x},${y + 1}) scale(.9)">${island()}</g>`;
       } else {
         const sh = NB2(k).some((n) => v.tiles[n]);
         s += `<polygon data-k="${k}" points="${hex(x, y)}" fill="${sh ? "#8fdcf5" : "#fff"}" fill-opacity="${sh ? 0.2 : 0}" stroke="#fff" stroke-opacity=".1"/>`;
-        if (SERP2.includes(k))
+        if (SERP3.includes(k))
           s += `<circle cx="${x}" cy="${y}" r="21" fill="none" stroke="#c77dff" stroke-width="1.5" stroke-dasharray="3 3" opacity=".7" pointer-events="none"/>`;
         if (DOCK2[k])
-          s += `<polygon points="${hex(x, y)}" fill="none" stroke="#ffd166" stroke-width="2" stroke-dasharray="5 4" pointer-events="none"/><text x="${x}" y="${y - 15}" font-size="11" text-anchor="middle" dominant-baseline="central" opacity=".8" pointer-events="none">\u2693</text>`;
+          s += `<polygon points="${hex(x, y)}" fill="none" stroke="#ffd166" stroke-width="2" stroke-dasharray="5 4" pointer-events="none"/><g transform="translate(${x},${y - 14}) scale(.6)" opacity=".85" pointer-events="none">${anchor()}</g>`;
       }
     }
     for (const k of DS) {
       const { x, y } = POS[k];
-      s += `<polygon points="${hex(x, y)}" fill="#ffe066" fill-opacity=".38" stroke="#ffe066" stroke-width="3" pointer-events="none"/>`;
+      s += `<polygon class="hl" points="${hex(x, y)}" fill="#ffe066" fill-opacity=".38" stroke="#ffe066" stroke-width="3" pointer-events="none"/>`;
     }
     const L = {};
-    const add = (k, f) => {
-      (L[k] = L[k] || []).push(f);
+    const add = (k, o) => {
+      (L[k] = L[k] || []).push(o);
     };
-    const tx = (k, id, a, e, sl) => (x, y) => `${sl ? `<circle cx="${x}" cy="${y}" r="15" fill="#fff8" stroke="#ffe066" stroke-width="3"/>` : ""}<circle data-k="${k}" data-${a}="${id}" cx="${x}" cy="${y}" r="14" fill="transparent"/><text data-k="${k}" data-${a}="${id}" x="${x}" y="${y}" font-size="22" text-anchor="middle" dominant-baseline="central" style="cursor:pointer">${e}</text>`;
-    v.boats.forEach((b) => add(b.k, tx(b.k, b.id, "b", "\u26F5", sel.b === b.id)));
-    v.creat.forEach(
-      (c) => add(c.k, tx(c.k, c.id, "c", CE[c.t], sel.c === c.id))
-    );
+    v.boats.forEach((b) => add(b.k, { tid: "b" + b.id, kind: "boat", col: "", data: `data-b="${b.id}"`, sl: sel.b === b.id }));
+    v.creat.forEach((c) => add(c.k, { tid: "c" + c.id, kind: c.t, col: "", data: `data-c="${c.id}"`, sl: sel.c === c.id }));
+    const fate = /* @__PURE__ */ new Map();
     v.people.forEach((p) => {
+      fate.set("p" + p.id, p.loc.t);
       if (["dead", "safe", "hand"].includes(p.loc.t)) return;
-      const k = engine_default.pk(v, p), sl = sel.p === p.id;
-      add(
-        k,
-        (x, y) => `<circle data-k="${k}" data-p="${p.id}" cx="${x}" cy="${y}" r="13" fill="transparent"/><circle data-k="${k}" data-p="${p.id}" cx="${x}" cy="${y}" r="7" fill="${C[p.o]}" stroke="${sl ? "#fff700" : p.loc.t === "boat" ? "#3b2410" : "#fff"}" stroke-width="${sl ? 3.5 : 1.6}" style="cursor:pointer"/>`
-      );
+      add(engine_default.pk(v, p), { tid: "p" + p.id, kind: p.loc.t === "boat" ? "rider" : "person", col: C[p.o], data: `data-p="${p.id}"`, sl: sel.p === p.id });
     });
+    const cur = /* @__PURE__ */ new Map();
     for (const k in L) {
       const { x, y } = POS[k];
-      L[k].forEach((f, i) => {
-        s += f(x + OFF[i % 7][0], y + OFF[i % 7][1]);
+      L[k].forEach((o, i) => {
+        const px = x + OFF[i % 7][0], py = y + OFF[i % 7][1];
+        cur.set(o.tid, { x: px, y: py, k, kind: o.kind, col: o.col });
+        const hit = o.kind === "person" || o.kind === "rider" ? 13 : 15;
+        s += `<g class="tk" data-tid="${o.tid}" style="transform:translate(${px}px,${py}px)">${o.sl ? '<circle r="16" fill="#fff8" stroke="#ffe066" stroke-width="3" class="selr" pointer-events="none"/>' : ""}<g class="in" pointer-events="none">${artOf(o.kind, o.col)}</g><circle data-k="${k}" ${o.data} r="${hit}" fill="transparent" style="cursor:pointer"/></g>`;
       });
     }
-    $("#bd").innerHTML = s;
+    const tilesNow = {};
+    for (const [k, t] of Object.entries(v.tiles)) tilesNow[k] = t.type;
+    layers();
+    $("#fg").innerHTML = s;
+    diff(cur, tilesNow, fate);
     const ph = v.phase, h = v.hands[me] || [], UB = v.canUndo ? '<button class="g" onclick="U.undo()">\u21A9 \u0628\u0631\u06AF\u0631\u062F\u0627\u0646</button> ' : "";
     let st = "", bt = "";
     if (ph === "setP") {
@@ -1227,6 +1506,7 @@
     $("#lgs").textContent = (NET ? "[" + CODE + "] " : "") + (LG[0] || "\u06AF\u0632\u0627\u0631\u0634");
   }
   function go(n) {
+    resetGfx();
     NET = null;
     OQ = [];
     $("#ov").style.display = "none";
@@ -1295,6 +1575,7 @@
   }
   function connect(first) {
     HADSTATE = 0;
+    resetGfx();
     if (NET) {
       try {
         NET.onclose = null;
@@ -1473,6 +1754,10 @@
   $("#zi").onclick = zc(0.75);
   $("#zo").onclick = zc(1.33);
   $("#zf").onclick = fitView;
+  $("#zm").textContent = isMuted() ? "\u{1F507}" : "\u{1F50A}";
+  $("#zm").onclick = () => {
+    $("#zm").textContent = toggleMute() ? "\u{1F507}" : "\u{1F50A}";
+  };
   addEventListener("resize", fitView);
   fitView();
   var G = globalThis;

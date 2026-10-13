@@ -1,5 +1,7 @@
 import A from "./engine";
 import type { State, ViewState, Sel, Ev, Action, ContentType } from "./engine";
+import * as G2 from "./gfx";
+import { sfx, toggleMute, isMuted } from "./sfx";
 
 const { SAFE, DOCK, SERP, NB, P, CELLS } = A;
 const $ = (s: string): any => document.querySelector(s);
@@ -46,13 +48,13 @@ const T: Record<string, [string, string, string]> = {
   ],
 };
 const CE: Record<string, string> = { serp: "🐍", shark: "🦈", whale: "🐋" };
-const hex = (x: number, y: number): string =>
+const hex = (x: number, y: number, r = SZ): string =>
   [0, 1, 2, 3, 4, 5]
     .map(
       (i) =>
-        (x + SZ * Math.cos((i * Math.PI) / 3)).toFixed(1) +
+        (x + r * Math.cos((i * Math.PI) / 3)).toFixed(1) +
         "," +
-        (y + SZ * Math.sin((i * Math.PI) / 3)).toFixed(1),
+        (y + r * Math.sin((i * Math.PI) / 3)).toFixed(1),
     )
     .join(" ");
 const POS: Record<string, { x: number; y: number }> = {};
@@ -191,30 +193,43 @@ function onEv(e: Ev): void {
       break;
     }
     case "took":
+      fxTook(e);
       log(PN[e.pl] + " کاشی برداشت: " + (e.cont ? T[e.cont]![1] : "(مخفی)"));
       break;
     case "saved":
+      sfx("saved");
       log(PN[e.pl] + " یک نفر را نجات داد.");
       break;
     case "roll":
+      showDie(e.face);
+      sfx("roll");
       log(PN[e.pl] + " تاس ریخت: " + CE[e.face]);
       break;
     case "cmove":
+      sfx("splash");
       log(PN[e.pl] + " " + CE[e.t] + " را حرکت داد.");
       break;
     case "defended":
+      sfx("shield");
       log(PN[e.pl] + " «" + T[e.tile]![1] + "» را بازی کرد.");
       break;
     case "capsize":
+      fxHit(e.k);
+      sfx("crash");
       log("نهنگ قایقی را واژگون کرد.");
       break;
     case "devoured":
+      fxHit(e.k);
+      sfx("crash");
       log("مار دریایی یک قایق را بلعید.");
       break;
     case "turn":
       if (NET) {
         log("نوبت " + PN[e.cur] + " است.");
-        if (e.cur === ME) document.title = "🔔 نوبت توست";
+        if (e.cur === ME) {
+          document.title = "🔔 نوبت توست";
+          sfx("turn");
+        }
         break;
       }
       ov(
@@ -331,7 +346,15 @@ function act(k: string): void {
   );
 }
 
-const DEFS = `<defs><radialGradient id="sea" cx="50%" cy="50%" r="75%"><stop offset="0" stop-color="#3b97d1"/><stop offset="1" stop-color="#0d466f"/></radialGradient><linearGradient id="gb" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#f8e8ae"/><stop offset="1" stop-color="#d8b565"/></linearGradient><linearGradient id="gf" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#78c46f"/><stop offset="1" stop-color="#34803f"/></linearGradient><linearGradient id="gm" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#c3c6d0"/><stop offset="1" stop-color="#6b6e80"/></linearGradient><linearGradient id="gs" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#a6e585"/><stop offset="1" stop-color="#4aa653"/></linearGradient><pattern id="wv" width="30" height="16" patternUnits="userSpaceOnUse"><path d="M0 8q7.5-7 15 0t15 0" fill="none" stroke="#fff" stroke-opacity=".14" stroke-width="1.5"/></pattern></defs><rect x="-300" y="-300" width="1350" height="1180" fill="url(#sea)"/><rect x="-300" y="-300" width="1350" height="1180" fill="url(#wv)"/>`;
+const WAVE = (id: string, op: number, dx: number, dur: number): string =>
+  `<pattern id="${id}" width="30" height="16" patternUnits="userSpaceOnUse"><path d="M0 8q7.5-7 15 0t15 0" fill="none" stroke="#fff" stroke-opacity="${op}" stroke-width="1.5"/><animateTransform attributeName="patternTransform" type="translate" from="0 0" to="${dx} 0" dur="${dur}s" repeatCount="indefinite"/></pattern>`;
+const DEFS = `<defs><radialGradient id="sea" cx="50%" cy="50%" r="75%"><stop offset="0" stop-color="#3b97d1"/><stop offset="1" stop-color="#0d466f"/></radialGradient><linearGradient id="gb" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#f8e8ae"/><stop offset="1" stop-color="#d8b565"/></linearGradient><linearGradient id="gf" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#78c46f"/><stop offset="1" stop-color="#34803f"/></linearGradient><linearGradient id="gm" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#c3c6d0"/><stop offset="1" stop-color="#6b6e80"/></linearGradient><linearGradient id="gs" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#a6e585"/><stop offset="1" stop-color="#4aa653"/></linearGradient>${WAVE("wv", 0.14, 30, 9)}${WAVE("wv2", 0.08, -30, 14)}<filter id="blur" x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur stdDeviation="3.2"/></filter></defs><rect x="-300" y="-300" width="1350" height="1180" fill="url(#sea)"/><rect x="-300" y="-300" width="1350" height="1180" fill="url(#wv)"/><rect x="-300" y="-300" width="1350" height="1180" fill="url(#wv2)" transform="translate(0 8)"/>${[[90, 70], [610, 120], [300, 520], [690, 470], [120, 330], [470, 40], [40, 520]].map(([x, y], n) => `<circle class="twk" cx="${x}" cy="${y}" r="1.6" fill="#fff" style="animation-delay:${n * 0.7}s"/>`).join("")}`;
+let LAYERS = false;
+function layers(): void {
+  if (LAYERS) return;
+  LAYERS = true;
+  $("#bd").innerHTML = DEFS + '<g id="fg"></g><g id="fx" pointer-events="none"></g>';
+}
 const tr = (x: number, y: number, z: number): string =>
   `<path d="M${x - 6 * z} ${y}l${6 * z}-${12 * z} ${6 * z} ${12 * z}zM${x - 5 * z} ${y - 5 * z}l${5 * z}-${11 * z} ${5 * z} ${11 * z}z" fill="#1f6b34"/><path d="M${x - 0.8} ${y}h1.6v3h-1.6z" fill="#5a3a1a"/>`;
 const deco = (t: string, h: number): string => {
@@ -352,15 +375,119 @@ const OFF = [
   [0, 18],
 ];
 
+interface Tk { x: number; y: number; k: string; kind: string; col: string }
+const artOf = (kind: string, col: string): string =>
+  kind === "person" ? G2.person(col) : kind === "rider" ? `<g transform="scale(.86)">${G2.person(col, true)}</g>` : kind === "boat" ? G2.boat() : G2.creature(kind);
+let PREV: Map<string, Tk> | null = null,
+  PTILES: Record<string, string> | null = null;
+function resetGfx(): void {
+  PREV = null;
+  PTILES = null;
+  const fx = $("#fx");
+  if (fx) fx.innerHTML = "";
+}
+// Add transient effects to the persistent #fx layer; they remove themselves.
+function fxAdd(html: string, ms = 1800): void {
+  const fx = $("#fx");
+  if (!fx || typeof fx.insertAdjacentHTML !== "function") return;
+  const before = fx.childElementCount;
+  fx.insertAdjacentHTML("beforeend", html);
+  const added = Array.from(fx.children).slice(before) as Element[];
+  setTimeout(() => added.forEach((e) => e.remove()), ms);
+}
+// Compare this frame with the previous one: slide moved tokens, pop in new ones, sink the dead,
+// sparkle the rescued, and lift taken tiles off the board.
+function diff(cur: Map<string, Tk>, tiles: Record<string, string>, fate: Map<string, string>): void {
+  const prev = PREV, pt = PTILES;
+  PREV = cur;
+  PTILES = tiles;
+  if (!prev || !pt) return;
+  const fg = $("#fg");
+  let fx = "", moved = false;
+  const els: ArrayLike<Element> = typeof fg.querySelectorAll === "function" ? fg.querySelectorAll(".tk") : [];
+  Array.from(els).forEach((el) => {
+    const tid = el.getAttribute("data-tid")!, n = cur.get(tid)!, o = prev.get(tid), cr = n.kind === "serp" || n.kind === "shark" || n.kind === "whale";
+    const st = (el as SVGGElement).style;
+    if (!o) {
+      el.firstElementChild?.classList.add("pop");
+      if (cr) fx += G2.ripple(n.x, n.y);
+    } else if (o.x !== n.x || o.y !== n.y) {
+      moved = true;
+      st.transition = "none";
+      st.transform = `translate(${o.x}px,${o.y}px)`;
+      el.getBoundingClientRect();
+      st.transition = "transform .45s cubic-bezier(.3,.7,.3,1)";
+      st.transform = `translate(${n.x}px,${n.y}px)`;
+      if (cr) fx += G2.ripple(n.x, n.y);
+    }
+  });
+  prev.forEach((o, tid) => {
+    if (cur.has(tid)) return;
+    if (fate.get(tid) === "safe") {
+      fx += G2.sparkle(o.x, o.y);
+      return;
+    }
+    fx += `<g style="transform:translate(${o.x}px,${o.y}px)"><g class="gh">${artOf(o.kind, o.col)}</g></g>` + G2.bubbles(o.x, o.y);
+  });
+  for (const k in pt) {
+    if (k in tiles) continue;
+    const { x, y } = POS[k]!, gr = { b: "gb", f: "gf", m: "gm" }[pt[k] as "b" | "f" | "m"];
+    fx += `<g style="transform:translate(${x}px,${y}px)"><g class="tileout"><polygon points="${hex(0, 4)}" fill="#3a3a3a"/><polygon points="${hex(0, 0)}" fill="url(#${gr})" stroke="#fff" stroke-opacity=".5" stroke-width="1.5" stroke-linejoin="round"/><g transform="translate(0,-13) scale(.8)">${deco(pt[k]!, 1)}</g></g></g>`;
+  }
+  if (fx) fxAdd(fx);
+  if (moved) sfx("move");
+}
+function showDie(face: string): void {
+  const d = $("#die");
+  if (!d) return;
+  d.innerHTML = `<div class="dice"><span id="df">${G2.dieFace(face)}</span></div>`;
+  const faces = ["serp", "shark", "whale"];
+  let i = 0;
+  const t = setInterval(() => {
+    const f = $("#df");
+    if (f) f.innerHTML = G2.dieFace(faces[i++ % 3]!);
+  }, 90);
+  setTimeout(() => {
+    clearInterval(t);
+    const f = $("#df");
+    if (f) f.innerHTML = G2.dieFace(face);
+  }, 750);
+  setTimeout(() => {
+    d.innerHTML = "";
+  }, 2100);
+}
+function fxTook(e: { k: string; cont: ContentType | null }): void {
+  sfx("take");
+  const p = POS[e.k];
+  if (!p) return;
+  if (e.cont === "whirl") {
+    fxAdd(G2.whirl(p.x, p.y), 2000);
+    sfx("whirl");
+  } else if (e.cont === "volc") {
+    fxAdd(G2.embers(p.x, p.y), 2600);
+    const d = $("#die");
+    if (d) d.innerHTML = '<div class="flash"></div>';
+    setTimeout(() => {
+      if (d) d.innerHTML = "";
+    }, 1500);
+    sfx("erupt");
+  }
+}
+function fxHit(k: string): void {
+  const p = POS[k];
+  if (p) fxAdd(G2.ripple(p.x, p.y) + G2.bubbles(p.x, p.y));
+}
+
 function render(): void {
   if (!S) return;
   const v = V(),
     me = actor(),
     DS = A.dests(S, me, ui.sel || {}, ui.mode || undefined),
     sel: Sel = ui.sel || {};
-  let s = DEFS,
+  let s = "",
     sd = "",
-    th = "";
+    th = "",
+    fo = "";
   for (const k of CELLS) {
     const { x, y } = POS[k]!;
     const t = (v.tiles as Record<string, { type: string }>)[k];
@@ -370,11 +497,12 @@ function render(): void {
             t.type as "b" | "f" | "m"
           ]
         : "#2f7a3a";
+      fo += `<polygon points="${hex(x, y, SZ * 1.16)}" fill="#fff" stroke="#fff" stroke-width="5" stroke-linejoin="round"/>`;
       sd += `<polygon points="${hex(x + 3, y + 9)}" fill="#001a33" fill-opacity=".28" pointer-events="none"/>`;
       th += `<polygon points="${hex(x, y + 4)}" fill="${c}" stroke="${c}" stroke-width="3" stroke-linejoin="round" pointer-events="none"/>`;
     }
   }
-  s += sd + th;
+  s += (fo ? `<g filter="url(#blur)" opacity=".5" pointer-events="none">${fo}</g>` : "") + sd + th;
   for (const k of CELLS) {
     const { x, y } = POS[k]!;
     const t = (v.tiles as Record<string, { type: string }>)[k];
@@ -382,51 +510,50 @@ function render(): void {
       h = (P(k) as number[]).reduce((a, b) => a * 7 + b, 3) % 3;
     if (t) {
       const d = { b: "gb", f: "gf", m: "gm" }[t.type as "b" | "f" | "m"];
-      s += `<polygon data-k="${k}" points="${hex(x, y)}" fill="url(#${d})" stroke="#fff" stroke-opacity=".5" stroke-width="1.5" stroke-linejoin="round"/><g pointer-events="none" transform="translate(${x},${y - 13}) scale(.8)">${deco(t.type, h)}</g>`;
+      s += `<polygon data-k="${k}" points="${hex(x, y)}" fill="url(#${d})" stroke="#fff" stroke-opacity=".5" stroke-width="1.5" stroke-linejoin="round"/><polygon points="${hex(x, y, SZ * 0.84)}" fill="none" stroke="#fff" stroke-opacity=".18" stroke-width="1.2" pointer-events="none"/><g pointer-events="none" transform="translate(${x},${y - 13}) scale(.8)">${deco(t.type, h)}</g>`;
     } else if (sf) {
-      s += `<polygon data-k="${k}" points="${hex(x, y)}" fill="url(#gs)" stroke="#fff" stroke-width="2" stroke-linejoin="round"/><text x="${x}" y="${y}" font-size="26" text-anchor="middle" dominant-baseline="central" pointer-events="none">🏝️</text>`;
+      s += `<polygon data-k="${k}" points="${hex(x, y)}" fill="url(#gs)" stroke="#fff" stroke-width="2" stroke-linejoin="round"/><g transform="translate(${x},${y + 1}) scale(.9)">${G2.island()}</g>`;
     } else {
       const sh = NB(k).some((n) => v.tiles[n]);
       s += `<polygon data-k="${k}" points="${hex(x, y)}" fill="${sh ? "#8fdcf5" : "#fff"}" fill-opacity="${sh ? 0.2 : 0}" stroke="#fff" stroke-opacity=".1"/>`;
       if (SERP.includes(k))
         s += `<circle cx="${x}" cy="${y}" r="21" fill="none" stroke="#c77dff" stroke-width="1.5" stroke-dasharray="3 3" opacity=".7" pointer-events="none"/>`;
       if (DOCK[k])
-        s += `<polygon points="${hex(x, y)}" fill="none" stroke="#ffd166" stroke-width="2" stroke-dasharray="5 4" pointer-events="none"/><text x="${x}" y="${y - 15}" font-size="11" text-anchor="middle" dominant-baseline="central" opacity=".8" pointer-events="none">⚓</text>`;
+        s += `<polygon points="${hex(x, y)}" fill="none" stroke="#ffd166" stroke-width="2" stroke-dasharray="5 4" pointer-events="none"/><g transform="translate(${x},${y - 14}) scale(.6)" opacity=".85" pointer-events="none">${G2.anchor()}</g>`;
     }
   }
   for (const k of DS) {
     const { x, y } = POS[k]!;
-    s += `<polygon points="${hex(x, y)}" fill="#ffe066" fill-opacity=".38" stroke="#ffe066" stroke-width="3" pointer-events="none"/>`;
+    s += `<polygon class="hl" points="${hex(x, y)}" fill="#ffe066" fill-opacity=".38" stroke="#ffe066" stroke-width="3" pointer-events="none"/>`;
   }
-  const L: Record<string, ((x: number, y: number) => string)[]> = {};
-  const add = (k: string, f: (x: number, y: number) => string): void => {
-    (L[k] = L[k] || []).push(f);
+  interface TokDef { tid: string; kind: string; col: string; data: string; sl: boolean }
+  const L: Record<string, TokDef[]> = {};
+  const add = (k: string, o: TokDef): void => {
+    (L[k] = L[k] || []).push(o);
   };
-  const tx =
-    (k: string, id: number, a: string, e: string, sl: boolean) =>
-    (x: number, y: number): string =>
-      `${sl ? `<circle cx="${x}" cy="${y}" r="15" fill="#fff8" stroke="#ffe066" stroke-width="3"/>` : ""}<circle data-k="${k}" data-${a}="${id}" cx="${x}" cy="${y}" r="14" fill="transparent"/><text data-k="${k}" data-${a}="${id}" x="${x}" y="${y}" font-size="22" text-anchor="middle" dominant-baseline="central" style="cursor:pointer">${e}</text>`;
-  v.boats.forEach((b) => add(b.k, tx(b.k, b.id, "b", "⛵", sel.b === b.id)));
-  v.creat.forEach((c) =>
-    add(c.k, tx(c.k, c.id, "c", CE[c.t]!, sel.c === c.id)),
-  );
+  v.boats.forEach((b) => add(b.k, { tid: "b" + b.id, kind: "boat", col: "", data: `data-b="${b.id}"`, sl: sel.b === b.id }));
+  v.creat.forEach((c) => add(c.k, { tid: "c" + c.id, kind: c.t, col: "", data: `data-c="${c.id}"`, sl: sel.c === c.id }));
+  const fate = new Map<string, string>();
   v.people.forEach((p) => {
+    fate.set("p" + p.id, p.loc.t);
     if (["dead", "safe", "hand"].includes(p.loc.t)) return;
-    const k = A.pk(v, p),
-      sl = sel.p === p.id;
-    add(
-      k,
-      (x, y) =>
-        `<circle data-k="${k}" data-p="${p.id}" cx="${x}" cy="${y}" r="13" fill="transparent"/><circle data-k="${k}" data-p="${p.id}" cx="${x}" cy="${y}" r="7" fill="${C[p.o]}" stroke="${sl ? "#fff700" : p.loc.t === "boat" ? "#3b2410" : "#fff"}" stroke-width="${sl ? 3.5 : 1.6}" style="cursor:pointer"/>`,
-    );
+    add(A.pk(v, p), { tid: "p" + p.id, kind: p.loc.t === "boat" ? "rider" : "person", col: C[p.o]!, data: `data-p="${p.id}"`, sl: sel.p === p.id });
   });
+  const cur = new Map<string, Tk>();
   for (const k in L) {
     const { x, y } = POS[k]!;
-    L[k]!.forEach((f, i) => {
-      s += f(x + OFF[i % 7]![0]!, y + OFF[i % 7]![1]!);
+    L[k]!.forEach((o, i) => {
+      const px = x + OFF[i % 7]![0]!, py = y + OFF[i % 7]![1]!;
+      cur.set(o.tid, { x: px, y: py, k, kind: o.kind, col: o.col });
+      const hit = o.kind === "person" || o.kind === "rider" ? 13 : 15;
+      s += `<g class="tk" data-tid="${o.tid}" style="transform:translate(${px}px,${py}px)">${o.sl ? '<circle r="16" fill="#fff8" stroke="#ffe066" stroke-width="3" class="selr" pointer-events="none"/>' : ""}<g class="in" pointer-events="none">${artOf(o.kind, o.col)}</g><circle data-k="${k}" ${o.data} r="${hit}" fill="transparent" style="cursor:pointer"/></g>`;
     });
   }
-  $("#bd").innerHTML = s;
+  const tilesNow: Record<string, string> = {};
+  for (const [k, t] of Object.entries(v.tiles as Record<string, { type: string }>)) tilesNow[k] = t.type;
+  layers();
+  $("#fg").innerHTML = s;
+  diff(cur, tilesNow, fate);
 
   const ph = v.phase,
     h = v.hands[me] || [],
@@ -504,6 +631,7 @@ function render(): void {
 }
 
 function go(n: number): void {
+  resetGfx();
   NET = null;
   OQ = [];
   $("#ov").style.display = "none";
@@ -579,6 +707,7 @@ function resume(): void {
 
 function connect(first: Record<string, unknown>): void {
   HADSTATE = 0;
+  resetGfx();
   if (NET) {
     try {
       NET.onclose = null;
@@ -771,6 +900,10 @@ const zc = (f: number) => (): void => {
 $("#zi").onclick = zc(0.75);
 $("#zo").onclick = zc(1.33);
 $("#zf").onclick = fitView;
+$("#zm").textContent = isMuted() ? "🔇" : "🔊";
+$("#zm").onclick = (): void => {
+  $("#zm").textContent = toggleMute() ? "🔇" : "🔊";
+};
 addEventListener("resize", fitView);
 fitView();
 

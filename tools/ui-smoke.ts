@@ -102,6 +102,6 @@ const ok =
   sent.length === 1 &&
   sent[0].type === "action" &&
   sent[0].a.t === "roll" &&
-  el["#bd"]!._h.length > 10000;
+  el["#fg"]!._h.length > 10000;
 console.log("ui smoke:", ok ? "OK" : "FAIL", "|", mine, "|", wait);
 process.exit(ok ? 0 : 1);

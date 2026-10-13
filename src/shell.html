@@ -238,6 +238,41 @@
           overflow-y: auto;
         }
       }
+      /* ---- board animation ---- */
+      .tk .in { transform-box: fill-box; transform-origin: center; }
+      .pop { animation: pop 0.5s cubic-bezier(0.3, 1.6, 0.5, 1); }
+      @keyframes pop { 0% { transform: scale(0); opacity: 0; } 60% { transform: scale(1.3); opacity: 1; } 100% { transform: scale(1); } }
+      .cr { animation: bob 2.4s ease-in-out infinite; }
+      .bt { animation: bob 3.2s ease-in-out infinite; }
+      @keyframes bob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-1.8px); } }
+      .selr { animation: selr 1s ease-in-out infinite; transform-box: fill-box; transform-origin: center; }
+      @keyframes selr { 50% { transform: scale(1.18); } }
+      .hl { animation: hl 1.3s ease-in-out infinite; }
+      @keyframes hl { 50% { fill-opacity: 0.62; } }
+      .twk { animation: twk 3.4s ease-in-out infinite; opacity: 0; }
+      @keyframes twk { 50% { opacity: 0.9; } }
+      .rip { fill: none; stroke: #fff; stroke-width: 2; transform-box: fill-box; transform-origin: center; animation: rip 0.9s ease-out forwards; }
+      @keyframes rip { from { transform: scale(0.3); opacity: 0.85; } to { transform: scale(2.8); opacity: 0; } }
+      .gh { animation: sink 0.9s ease-in forwards; }
+      @keyframes sink { to { transform: translateY(9px) scale(0.4) rotate(25deg); opacity: 0; } }
+      .bub { fill: none; stroke: #dff6ff; stroke-width: 1; animation: bub 1s ease-out forwards; }
+      @keyframes bub { from { transform: translate(0, 0); opacity: 0.9; } to { transform: translate(var(--dx), -24px); opacity: 0; } }
+      .spk { animation: spk 1s ease-out forwards; }
+      @keyframes spk { from { transform: translate(0, 0) scale(1); opacity: 1; } to { transform: translate(var(--dx), -26px) scale(0.2); opacity: 0; } }
+      .tileout { transform-box: fill-box; transform-origin: center; animation: tout 0.8s ease-in forwards; }
+      @keyframes tout { 35% { transform: translateY(-9px) scale(1.06); } to { transform: translateY(-18px) scale(0.5); opacity: 0; } }
+      .whirl { animation: wh 1.6s ease-in forwards; }
+      @keyframes wh { from { transform: rotate(0) scale(1.3); opacity: 0.95; } to { transform: rotate(720deg) scale(0.15); opacity: 0; } }
+      .blast { transform-box: fill-box; transform-origin: center; animation: blast 0.9s ease-out forwards; }
+      @keyframes blast { from { transform: scale(0.2); opacity: 0.9; } to { transform: scale(3.2); opacity: 0; } }
+      .emb { animation: emb 1.8s ease-out forwards; }
+      @keyframes emb { from { transform: translate(0, 0); opacity: 1; } to { transform: translate(var(--dx), -80px); opacity: 0; } }
+      #die { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; pointer-events: none; z-index: 2; }
+      .dice { width: 112px; height: 112px; border-radius: 22px; background: #fff; box-shadow: 0 8px 28px #0008; display: flex; align-items: center; justify-content: center; animation: roll 1.2s cubic-bezier(0.2, 0.7, 0.3, 1) forwards; }
+      @keyframes roll { 0% { transform: translateY(-140px) rotate(0) scale(0.5); opacity: 0; } 25% { opacity: 1; } 70% { transform: translateY(0) rotate(600deg) scale(1.12); } 100% { transform: rotate(720deg) scale(1); opacity: 1; } }
+      .flash { position: absolute; inset: 0; background: radial-gradient(circle, #ffb03bcc, #ff3d0066 60%, transparent); animation: fl 1.4s ease-out forwards; }
+      @keyframes fl { 0% { opacity: 0; } 15% { opacity: 1; } 100% { opacity: 0; } }
+      @media (prefers-reduced-motion: reduce) { .cr, .bt, .twk, .hl, .selr { animation: none; } }
     </style>
   </head>
   <body>
@@ -245,11 +280,13 @@
       <div id="main">
         <div id="sc"></div>
         <div id="bw">
-          <svg id="bd" viewBox="0 0 750 580"></svg>
+          <div id="die"></div>
+        <svg id="bd" viewBox="0 0 750 580"></svg>
           <div id="zc">
             <button id="zi" aria-label="zoom in">＋</button
             ><button id="zo" aria-label="zoom out">－</button
             ><button id="zf" aria-label="fit">⤢</button>
+          <button id="zm" aria-label="sound">🔊</button>
           </div>
         </div>
       </div>
