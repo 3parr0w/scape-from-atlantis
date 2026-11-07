@@ -70,13 +70,31 @@ if (!t || !a) {
 // A join that lands on a serverless instance that does not own the room must be retried on a
 // fresh connection instead of dropping the player straight back to the menu.
 g.onlineMenu();
-mk("#cd").value = "ABC";
-mk("#nm").value = "x";
+mk("#jcd").value = "ABC";
+mk("#jnm").value = "x";
 g.joinRoom();
 g.onNet({ type: "error", msg: "اتاقی با این کد یافت نشد: ABC" });
 const retried = /تلاش دوباره/.test(el["#ovb"]!._h);
 g.menu(); // clears the pending join, so the scheduled retry becomes a no-op
 t.setNet(null, 0);
+
+// Regression: the overlay must not reuse an id that already exists in the shell. querySelector
+// returns the first match in document order, so a duplicate id (e.g. #cd, the card-description
+// div) makes the join read the wrong element and send an empty room code.
+// Only the static markup counts — the bundle script contains the overlay templates themselves.
+const shellIds = new Set(
+  [...html.split("<script>")[0]!.matchAll(/\sid="([^"]+)"/g)].map((x) => x[1]!),
+);
+g.onlineMenu();
+const overlayIds = [...el["#ovb"]!._h.matchAll(/\sid="([^"]+)"/g)].map(
+  (x) => x[1]!,
+);
+const dupes = overlayIds.filter((id) => shellIds.has(id));
+if (dupes.length)
+  throw new Error("overlay reuses shell element id(s): " + dupes.join(", "));
+if (!overlayIds.includes("jcd") || !overlayIds.includes("jnm"))
+  throw new Error("online menu is missing its name/code inputs");
+g.menu();
 
 t.go(2);
 while (t.S.phase === "setP")
@@ -115,5 +133,14 @@ const ok =
   sent[0].type === "action" &&
   sent[0].a.t === "roll" &&
   el["#fg"]!._h.length > 10000;
-console.log("ui smoke:", ok ? "OK" : "FAIL", "|", mine, "|", wait, "| retry:", retried);
+console.log(
+  "ui smoke:",
+  ok ? "OK" : "FAIL",
+  "|",
+  mine,
+  "|",
+  wait,
+  "| retry:",
+  retried,
+);
 process.exit(ok ? 0 : 1);

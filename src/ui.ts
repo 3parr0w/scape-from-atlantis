@@ -950,8 +950,12 @@ function startLocal(n: number): void {
 function onlineMenu(msg?: string, name?: string, code?: string): void {
   OQ = [];
   const q = code ?? (new URLSearchParams(location.search).get("room") || "");
+  // The overlay inputs use their own ids (#jnm / #jcd). They must NOT reuse ids that already
+  // exist in the shell (e.g. #cd is the card-description div in the status bar): querySelector
+  // returns the first match in document order, so a duplicate id would read the wrong element
+  // and the join would send an empty room code.
   ov(
-    `<h3>بازی آنلاین</h3><p><input id="nm" placeholder="نام تو" maxlength="16" value="${esc(name ?? "")}"></p><p>ساخت اتاق: <button onclick="mkRoom(2)">۲</button> <button onclick="mkRoom(3)">۳</button> <button onclick="mkRoom(4)">۴</button> نفره</p><p><input id="cd" placeholder="کد اتاق" maxlength="5" value="${esc(q)}" style="text-transform:uppercase"> <button onclick="joinRoom()">ورود</button></p><p style="color:#e63946">${msg ? esc(msg) : ""}</p><p><button class="g" onclick="menu()">بازگشت</button></p>`,
+    `<h3>بازی آنلاین</h3><p><input id="jnm" placeholder="نام تو" maxlength="16" value="${esc(name ?? "")}"></p><p>ساخت اتاق: <button onclick="mkRoom(2)">۲</button> <button onclick="mkRoom(3)">۳</button> <button onclick="mkRoom(4)">۴</button> نفره</p><p><input id="jcd" placeholder="کد اتاق" maxlength="5" value="${esc(q)}" style="text-transform:uppercase"> <button onclick="joinRoom()">ورود</button></p><p style="color:#e63946">${msg ? esc(msg) : ""}</p><p><button class="g" onclick="menu()">بازگشت</button></p>`,
     null,
     true,
   );
@@ -959,11 +963,11 @@ function onlineMenu(msg?: string, name?: string, code?: string): void {
 const val = (id: string): string => ($(id) || {}).value || "";
 function mkRoom(n: number): void {
   PENDING = null;
-  connect({ type: "create", n, name: val("#nm") });
+  connect({ type: "create", n, name: val("#jnm") });
 }
 function joinRoom(): void {
-  const code = val("#cd").toUpperCase().trim();
-  const name = val("#nm");
+  const code = val("#jcd").toUpperCase().trim();
+  const name = val("#jnm");
   PENDING = { code, name, tries: 0 };
   connect({ type: "join", code, name });
 }
@@ -1040,7 +1044,8 @@ function onNet(m: any): void {
           true,
         );
         setTimeout(() => {
-          if (PENDING === p) connect({ type: "join", code: p.code, name: p.name });
+          if (PENDING === p)
+            connect({ type: "join", code: p.code, name: p.name });
         }, 1000);
         return;
       }
