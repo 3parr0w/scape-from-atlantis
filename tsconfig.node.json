@@ -13,5 +13,5 @@
     "sourceMap": false
   },
   "include": ["src/**/*.ts", "server.ts", "tools/**/*.ts"],
-  "exclude": ["src/ui.ts"]
+  "exclude": ["src/ui.ts", "src/gfx.ts", "src/sfx.ts"]
 }

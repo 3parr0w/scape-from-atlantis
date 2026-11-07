@@ -1,0 +1,1 @@
+if ($env:GEMINI_API_KEY -or $env:GOOGLE_API_KEY) { Write-Host 'GEMINI_KEY=set' } else { Write-Host 'GEMINI_KEY=unset' }

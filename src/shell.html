@@ -13,26 +13,77 @@
       rel="stylesheet"
     />
     <style>
+      /* ---- design tokens ---------------------------------------------------------------
+         One semantic layer for colour, spacing, type, icon sizes and motion. Everything below
+         references these instead of raw hex, so a theme or density change is one edit. */
       :root {
+        /* colour */
         --bg: #eef3f6;
         --fg: #10283a;
         --card: #fff;
         --ac: #c2410c;
+        --board: #1b6196;
+        --border: rgba(0, 0, 0, 0.14);
+        --rail-bg: rgba(0, 0, 0, 0.67);
+        --rail-border: rgba(255, 255, 255, 0.4);
+        --scrim: rgba(6, 18, 28, 0.72);
+        --focus: #1d4ed8;
+        --state-done: rgba(23, 163, 152, 0.2);
+        --sel: #b45309;
+        /* spacing - 4/8 rhythm */
+        --s1: 4px;
+        --s2: 6px;
+        --s3: 8px;
+        --s4: 12px;
+        --s5: 16px;
+        /* radius */
+        --r-sm: 8px;
+        --r-md: 10px;
+        --r-lg: 12px;
+        --r-pill: 999px;
+        /* type */
+        --fs-xs: 11px;
+        --fs-sm: 12px;
+        --fs-md: 13px;
+        --fs-base: 16px;
+        --fs-lg: 18px;
+        /* icon sizes */
+        --ic-sm: 16px;
+        --ic-md: 20px;
+        --ic-lg: 24px;
+        /* motion */
+        --t-fast: 120ms;
+        --t-mid: 220ms;
+        --ease: cubic-bezier(0.3, 0.7, 0.3, 1);
+        /* minimum hit area (touch) */
+        --touch: 44px;
         box-sizing: border-box;
-        padding-top: env(safe-area-inset-top, 0px);
-        padding-bottom: env(safe-area-inset-bottom, 0px);
       }
       @media (prefers-color-scheme: dark) {
         :root:not([data-theme="light"]) {
           --bg: #071622;
           --fg: #e6eef4;
           --card: #0f2a3d;
+          --board: #16496f;
+          --border: rgba(255, 255, 255, 0.14);
+          --rail-bg: rgba(0, 0, 0, 0.6);
+          --scrim: rgba(2, 8, 14, 0.78);
+          --focus: #7cc4ff;
+          --state-done: rgba(23, 163, 152, 0.26);
+          --sel: #f2b705;
         }
       }
       :root[data-theme="dark"] {
         --bg: #071622;
         --fg: #e6eef4;
         --card: #0f2a3d;
+        --board: #16496f;
+        --border: rgba(255, 255, 255, 0.14);
+        --rail-bg: rgba(0, 0, 0, 0.6);
+        --scrim: rgba(2, 8, 14, 0.78);
+        --focus: #7cc4ff;
+        --state-done: rgba(23, 163, 152, 0.26);
+        --sel: #f2b705;
       }
       html {
         scroll-padding-top: env(safe-area-inset-top, 0px);
@@ -47,7 +98,7 @@
         background: var(--bg);
         color: var(--fg);
         font:
-          15px/1.6 Vazirmatn,
+          var(--fs-base) / 1.6 Vazirmatn,
           Tahoma,
           sans-serif;
       }
@@ -55,11 +106,22 @@
         height: 100%;
         max-width: 1100px;
         margin: auto;
-        padding: 6px;
+        /* Safe-area aware (notch, rounded corners, home indicator, landscape cutouts): the whole
+           HUD is inset instead of relying on padding on :root, which never covered left/right. */
+        padding: calc(var(--s2) + env(safe-area-inset-top, 0px))
+          calc(var(--s2) + env(safe-area-inset-right, 0px))
+          calc(var(--s2) + env(safe-area-inset-bottom, 0px))
+          calc(var(--s2) + env(safe-area-inset-left, 0px));
         box-sizing: border-box;
         display: flex;
         flex-direction: column;
-        gap: 6px;
+        gap: var(--s2);
+      }
+      /* Visible keyboard focus (WCAG 2.2 Focus Appearance): a 2px ring offset onto the page
+         background, so it stays legible on top of the accent-filled buttons too. */
+      :focus-visible {
+        outline: 2px solid var(--focus);
+        outline-offset: 2px;
       }
       #main {
         flex: 1;
@@ -67,7 +129,7 @@
         min-width: 0;
         display: flex;
         flex-direction: column;
-        gap: 6px;
+        gap: var(--s2);
       }
       #sc {
         flex: none;
@@ -77,59 +139,63 @@
         white-space: nowrap;
         scrollbar-width: none;
       }
-      .chip {
-        background: var(--card);
-        border-radius: 999px;
-        padding: 0 9px;
-        font-size: 12px;
-        border: 2px solid transparent;
-        flex: none;
-      }
-      .chip.cur {
-        border-color: var(--ac);
-      }
       .dot {
         display: inline-block;
         width: 11px;
         height: 11px;
         border-radius: 50%;
-        margin-inline-end: 5px;
+        margin-inline-end: var(--s1);
       }
       #bw {
         flex: 1;
         min-height: 0;
         position: relative;
-        border-radius: 12px;
+        border-radius: var(--r-lg);
         overflow: hidden;
-        background: #1b6196;
+        background: var(--board);
       }
-      svg {
+      /* Only the board fills its container. As a bare `svg` rule this also stretched every inline
+         icon and card graphic to 100% of its box, which is why small icons looked oversized. */
+      #bd {
         width: 100%;
         height: 100%;
-        display: block;
         touch-action: none;
         user-select: none;
         -webkit-user-select: none;
         direction: ltr;
       }
+      svg {
+        display: block;
+      }
+      /* Inline icons from gfx.ts (icon / tileIcon / creatureIcon / pip) flow with the surrounding text. */
+      svg.ic {
+        display: inline-block;
+        vertical-align: -0.18em;
+        flex: none;
+      }
+      /* Directional glyphs mirror in RTL (the undo arrow is the only one we ship); symmetric
+         icons such as zoom or fit must NOT be mirrored. */
+      [dir="rtl"] .ic-rtl {
+        transform: scaleX(-1);
+      }
       #zc {
         position: absolute;
-        left: 8px;
-        bottom: 8px;
+        left: var(--s3);
+        bottom: var(--s3);
         display: flex;
         flex-direction: column;
-        gap: 6px;
+        gap: var(--s2);
       }
+      /* Icon-only controls keep the 44px minimum hit area, not the 40px the glyphs used. */
       #zc button {
-        width: 40px;
-        height: 40px;
-        min-height: 0;
+        width: var(--touch);
+        height: var(--touch);
+        min-height: var(--touch);
         padding: 0;
         border-radius: 50%;
-        font-size: 20px;
         line-height: 1;
-        background: #000a;
-        border: 2px solid #fff6;
+        background: var(--rail-bg);
+        border: 2px solid var(--rail-border);
         color: #fff;
       }
       #side {
@@ -160,22 +226,35 @@
         display: none;
       }
       button {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: var(--s2);
         font: inherit;
-        min-height: 44px;
-        padding: 6px 16px;
-        border-radius: 10px;
+        min-height: var(--touch);
+        padding: var(--s2) var(--s5);
+        border-radius: var(--r-md);
         border: 2px solid var(--ac);
         background: var(--ac);
         color: #fff;
         cursor: pointer;
         touch-action: manipulation;
+        transition:
+          background-color var(--t-fast) var(--ease),
+          border-color var(--t-fast) var(--ease),
+          opacity var(--t-fast) var(--ease);
       }
       button.g {
         background: transparent;
         color: var(--ac);
       }
+      /* Pressed feedback that does not shift layout bounds (no transform, no jitter). */
+      button:active:not(:disabled) {
+        opacity: 0.82;
+      }
       button:disabled {
         opacity: 0.4;
+        cursor: default;
       }
       input {
         font: inherit;
@@ -205,12 +284,16 @@
       #ov {
         position: fixed;
         inset: 0;
-        background: #000b;
+        background: var(--scrim);
         display: none;
         align-items: center;
         justify-content: center;
         z-index: 9;
-        padding: 12px;
+        /* Fixed full-screen UI is inset too, so the dialog is never under a notch. */
+        padding: calc(var(--s4) + env(safe-area-inset-top, 0px))
+          calc(var(--s4) + env(safe-area-inset-right, 0px))
+          calc(var(--s4) + env(safe-area-inset-bottom, 0px))
+          calc(var(--s4) + env(safe-area-inset-left, 0px));
         box-sizing: border-box;
       }
       #ov > div {
@@ -238,6 +321,91 @@
           overflow-y: auto;
         }
       }
+      /* ---- board animation ---- */
+      .tk .in { transform-box: fill-box; transform-origin: center; }
+      .pop { animation: pop 0.5s cubic-bezier(0.3, 1.6, 0.5, 1); }
+      @keyframes pop { 0% { transform: scale(0); opacity: 0; } 60% { transform: scale(1.3); opacity: 1; } 100% { transform: scale(1); } }
+      .cr { animation: bob 2.4s ease-in-out infinite; }
+      .bt { animation: bob 3.2s ease-in-out infinite; }
+      @keyframes bob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-1.8px); } }
+      .selr { animation: selr 1s ease-in-out infinite; transform-box: fill-box; transform-origin: center; }
+      @keyframes selr { 50% { transform: scale(1.18); } }
+      .hl { animation: hl 1.3s ease-in-out infinite; }
+      @keyframes hl { 50% { fill-opacity: 0.62; } }
+      .twk { animation: twk 3.4s ease-in-out infinite; opacity: 0; }
+      @keyframes twk { 50% { opacity: 0.9; } }
+      .rip { fill: none; stroke: #fff; stroke-width: 2; transform-box: fill-box; transform-origin: center; animation: rip 0.9s ease-out forwards; }
+      @keyframes rip { from { transform: scale(0.3); opacity: 0.85; } to { transform: scale(2.8); opacity: 0; } }
+      .gh { animation: sink 0.9s ease-in forwards; }
+      @keyframes sink { to { transform: translateY(9px) scale(0.4) rotate(25deg); opacity: 0; } }
+      .bub { fill: none; stroke: #dff6ff; stroke-width: 1; animation: bub 1s ease-out forwards; }
+      @keyframes bub { from { transform: translate(0, 0); opacity: 0.9; } to { transform: translate(var(--dx), -24px); opacity: 0; } }
+      .spk { animation: spk 1s ease-out forwards; }
+      @keyframes spk { from { transform: translate(0, 0) scale(1); opacity: 1; } to { transform: translate(var(--dx), -26px) scale(0.2); opacity: 0; } }
+      .tileout { transform-box: fill-box; transform-origin: center; animation: tout 0.8s ease-in forwards; }
+      @keyframes tout { 35% { transform: translateY(-9px) scale(1.06); } to { transform: translateY(-18px) scale(0.5); opacity: 0; } }
+      .whirl { animation: wh 1.6s ease-in forwards; }
+      @keyframes wh { from { transform: rotate(0) scale(1.3); opacity: 0.95; } to { transform: rotate(720deg) scale(0.15); opacity: 0; } }
+      .blast { transform-box: fill-box; transform-origin: center; animation: blast 0.9s ease-out forwards; }
+      @keyframes blast { from { transform: scale(0.2); opacity: 0.9; } to { transform: scale(3.2); opacity: 0; } }
+      .emb { animation: emb 1.8s ease-out forwards; }
+      @keyframes emb { from { transform: translate(0, 0); opacity: 1; } to { transform: translate(var(--dx), -80px); opacity: 0; } }
+      #die { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; pointer-events: none; z-index: 2; }
+      .dice { width: 112px; height: 112px; border-radius: 22px; background: #fff; box-shadow: 0 8px 28px #0008; display: flex; align-items: center; justify-content: center; animation: roll 1.2s cubic-bezier(0.2, 0.7, 0.3, 1) forwards; }
+      @keyframes roll { 0% { transform: translateY(-140px) rotate(0) scale(0.5); opacity: 0; } 25% { opacity: 1; } 70% { transform: translateY(0) rotate(600deg) scale(1.12); } 100% { transform: rotate(720deg) scale(1); opacity: 1; } }
+      .flash { position: absolute; inset: 0; background: radial-gradient(circle, #ffb03bcc, #ff3d0066 60%, transparent); animation: fl 1.4s ease-out forwards; }
+      @keyframes fl { 0% { opacity: 0; } 15% { opacity: 1; } 100% { opacity: 0; } }
+      @media (prefers-reduced-motion: reduce) { .cr, .bt, .twk, .hl, .selr { animation: none; } }
+      /* ---- players, steps, hand cards ---- */
+      #sc { padding: 2px 2px 4px; }
+      .pc { display: flex; align-items: center; gap: 8px; background: var(--card); border-radius: 12px; padding: 4px 10px 4px 8px; border: 2px solid transparent; flex: none; }
+      .pc.cur { border-color: var(--c); box-shadow: 0 0 0 3px color-mix(in srgb, var(--c) 28%, transparent); }
+      .pc.off { opacity: 0.55; }
+      .av { width: 30px; height: 30px; border-radius: 50%; background: var(--c); color: #fff; display: inline-flex; align-items: center; justify-content: center; font-weight: 800; flex: none; }
+      .av.big { width: 84px; height: 84px; font-size: 42px; margin: 0 auto 6px; }
+      .pi { display: flex; flex-direction: column; min-width: 0; }
+      .pi > b { font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 110px; }
+      .pi small { font-size: 11px; opacity: 0.75; min-height: 14px; }
+      .ps { display: flex; flex-wrap: nowrap; gap: var(--s3); font-size: var(--fs-xs); }
+      .ps span { display: flex; flex-direction: column; align-items: center; line-height: 1.15; }
+      .ps span b { font-size: 13px; }
+      .mini { display: inline-block; width: 9px; height: 12px; border-radius: 2px; background: linear-gradient(135deg, #e9b44c, #c2410c); border: 1px solid #fff8; }
+      #stph { display: flex; gap: 8px; align-items: center; }
+      #stph:empty { display: none; }
+      /* Chip showing the creature that was just rolled (art from gfx.ts, not an emoji). */
+      .rollc {
+        flex: none;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        background: var(--card);
+        border: 2px solid var(--ac);
+      }
+      .rollc svg { width: auto; height: auto; }
+      .who { flex: none; color: #fff; border-radius: 999px; padding: 1px 10px; font-weight: 800; font-size: 12px; max-width: 120px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+      .stp { display: flex; gap: var(--s1); list-style: none; margin: 0; padding: 0; flex: 1; font-size: var(--fs-sm); min-width: 0; }
+      .stp li { flex: 1; text-align: center; padding: 2px 4px; border-radius: var(--r-sm); background: #0001; opacity: 0.75; line-height: 1.25; overflow-wrap: anywhere; }
+      .stp li.on { background: var(--ac); color: #fff; opacity: 1; font-weight: 800; }
+      .stp li.dn { opacity: 0.9; background: var(--state-done); }
+      .stp i { font-style: normal; margin-inline-end: 4px; font-weight: 800; }
+      .pips { display: inline-flex; gap: 2px; vertical-align: -0.1em; text-decoration: none; }
+      #st { font-weight: 800; }
+      #hand:empty, #cd:empty { display: none; }
+      .th { font-size: var(--fs-sm); opacity: 0.78; }
+      .tr { display: flex; gap: 7px; overflow-x: auto; padding: 4px 2px 4px; scrollbar-width: none; }
+      .tc { flex: none; width: 66px; min-height: 0; padding: 5px 3px 4px; border-radius: 12px; border: 2px solid #0002; background: linear-gradient(#3b86bd, #1d4f7a); color: #fff; display: flex; flex-direction: column; align-items: center; gap: 2px; font-size: 11px; line-height: 1.25; }
+      .tc.d { background: linear-gradient(#e0a93a, #9a6a12); }
+      .tc.pm { background: linear-gradient(#fff, #e3edf3); color: #10283a; width: 56px; font-size: 14px; }
+      .tc.sel { border-color: var(--sel); box-shadow: 0 0 0 3px color-mix(in srgb, var(--sel) 55%, transparent); }
+      .tc.dim { opacity: 0.55; }
+      .tc em { font-style: normal; font-size: 10px; background: #0005; border-radius: var(--r-sm); padding: 0 5px; }
+      #cd { font-size: 12px; background: #ffe06633; border-radius: 8px; padding: 4px 8px; }
+      #bt button.pri { flex: 1; min-width: 140px; }
+      #bt button.pri.big { font-size: 18px; min-height: 52px; }
+      .rvart svg { display: block; margin: 0 auto; }
     </style>
   </head>
   <body>
@@ -245,17 +413,22 @@
       <div id="main">
         <div id="sc"></div>
         <div id="bw">
-          <svg id="bd" viewBox="0 0 750 580"></svg>
+          <div id="die"></div>
+        <svg id="bd" viewBox="0 0 750 580"></svg>
           <div id="zc">
-            <button id="zi" aria-label="zoom in">＋</button
-            ><button id="zo" aria-label="zoom out">－</button
-            ><button id="zf" aria-label="fit">⤢</button>
+            <button id="zi" type="button" aria-label="بزرگ‌نمایی" title="بزرگ‌نمایی"></button
+            ><button id="zo" type="button" aria-label="کوچک‌نمایی" title="کوچک‌نمایی"></button
+            ><button id="zf" type="button" aria-label="اندازه‌ی صفحه" title="کل تخته"></button
+            ><button id="zm" type="button" aria-label="صدا" aria-pressed="false" title="صدا"></button>
           </div>
         </div>
       </div>
       <div id="side">
         <div id="bar" class="box">
+          <div id="stph"></div>
           <div id="st"></div>
+          <div id="hand"></div>
+          <div id="cd"></div>
           <div id="bt"></div>
         </div>
         <details id="lgd" class="box">
