@@ -134,6 +134,11 @@ let LG: string[] = [],
   ENDED = 0,
   LOBBY = 0,
   HADSTATE = 0; // whether a game state has arrived on the current connection
+// A join that is in flight. Serverless hosts (e.g. Vercel) can run several instances, each with its
+// own in-memory rooms, so a join may land on an instance that does not know the room yet. Retrying
+// the join on a fresh connection gives it another chance to reach the instance that owns the room.
+let PENDING: { code: string; name: string; tries: number } | null = null;
+const MAX_JOIN_TRIES = 3;
 const esc = (s: unknown): string =>
   String(s).replace(
     /[&<>"']/g,
@@ -905,6 +910,7 @@ const setST = (o: { code: string; token: string } | null): void => {
 };
 
 function menu(): void {
+  PENDING = null;
   OQ = [];
   const s = ST();
   ov(
@@ -941,27 +947,28 @@ function startLocal(n: number): void {
     Array.from({ length: n }, (_, i) => cleanName(val("#ln" + i)) || PN[i]!),
   );
 }
-function onlineMenu(msg?: string): void {
+function onlineMenu(msg?: string, name?: string, code?: string): void {
   OQ = [];
-  const q = new URLSearchParams(location.search).get("room") || "";
+  const q = code ?? (new URLSearchParams(location.search).get("room") || "");
   ov(
-    `<h3>بازی آنلاین</h3><p><input id="nm" placeholder="نام تو" maxlength="16"></p><p>ساخت اتاق: <button onclick="mkRoom(2)">۲</button> <button onclick="mkRoom(3)">۳</button> <button onclick="mkRoom(4)">۴</button> نفره</p><p><input id="cd" placeholder="کد اتاق" maxlength="5" value="${esc(q)}" style="text-transform:uppercase"> <button onclick="joinRoom()">ورود</button></p><p style="color:#e63946">${msg ? esc(msg) : ""}</p><p><button class="g" onclick="menu()">بازگشت</button></p>`,
+    `<h3>بازی آنلاین</h3><p><input id="nm" placeholder="نام تو" maxlength="16" value="${esc(name ?? "")}"></p><p>ساخت اتاق: <button onclick="mkRoom(2)">۲</button> <button onclick="mkRoom(3)">۳</button> <button onclick="mkRoom(4)">۴</button> نفره</p><p><input id="cd" placeholder="کد اتاق" maxlength="5" value="${esc(q)}" style="text-transform:uppercase"> <button onclick="joinRoom()">ورود</button></p><p style="color:#e63946">${msg ? esc(msg) : ""}</p><p><button class="g" onclick="menu()">بازگشت</button></p>`,
     null,
     true,
   );
 }
 const val = (id: string): string => ($(id) || {}).value || "";
 function mkRoom(n: number): void {
+  PENDING = null;
   connect({ type: "create", n, name: val("#nm") });
 }
 function joinRoom(): void {
-  connect({
-    type: "join",
-    code: val("#cd").toUpperCase().trim(),
-    name: val("#nm"),
-  });
+  const code = val("#cd").toUpperCase().trim();
+  const name = val("#nm");
+  PENDING = { code, name, tries: 0 };
+  connect({ type: "join", code, name });
 }
 function resume(): void {
+  PENDING = null;
   const s = ST();
   if (s) connect({ type: "rejoin", code: s.code, token: s.token });
 }
@@ -1018,12 +1025,34 @@ function onNet(m: any): void {
     if (!S && !LOBBY) {
       if (/یافت نشد/.test(m.msg)) setST(null);
       NET = null;
-      return onlineMenu(m.msg);
+      // A serverless host may have answered from an instance that does not own the room yet.
+      // Retry the same join on a fresh connection before giving up.
+      if (
+        PENDING &&
+        /اتاقی با این کد یافت نشد/.test(m.msg) &&
+        PENDING.tries < MAX_JOIN_TRIES
+      ) {
+        PENDING.tries++;
+        const p = PENDING;
+        ov(
+          `<h3>در حال اتصال…</h3><p>اتاق پیدا نشد؛ تلاش دوباره (${p.tries} از ${MAX_JOIN_TRIES})</p>`,
+          null,
+          true,
+        );
+        setTimeout(() => {
+          if (PENDING === p) connect({ type: "join", code: p.code, name: p.name });
+        }, 1000);
+        return;
+      }
+      const p = PENDING;
+      PENDING = null;
+      return onlineMenu(m.msg, p?.name, p?.code);
     }
     log(G2.icon("warn", 16) + " " + m.msg);
     return render();
   }
   if (m.type === "joined") {
+    PENDING = null;
     CODE = m.code;
     ME = m.seat;
     setST({ code: m.code, token: m.token });

@@ -67,6 +67,17 @@ if (!t || !a) {
   process.exit(1);
 }
 
+// A join that lands on a serverless instance that does not own the room must be retried on a
+// fresh connection instead of dropping the player straight back to the menu.
+g.onlineMenu();
+mk("#cd").value = "ABC";
+mk("#nm").value = "x";
+g.joinRoom();
+g.onNet({ type: "error", msg: "اتاقی با این کد یافت نشد: ABC" });
+const retried = /تلاش دوباره/.test(el["#ovb"]!._h);
+g.menu(); // clears the pending join, so the scheduled retry becomes a no-op
+t.setNet(null, 0);
+
 t.go(2);
 while (t.S.phase === "setP")
   t.dispatch({ t: "placePerson", k: a.dests(t.S, t.S.cur)[0] });
@@ -97,11 +108,12 @@ t.onNet(msg(0));
 t.dispatch({ t: "roll" });
 
 const ok =
+  retried &&
   /تاس/.test(mine) &&
   /نوبت/.test(wait) &&
   sent.length === 1 &&
   sent[0].type === "action" &&
   sent[0].a.t === "roll" &&
   el["#fg"]!._h.length > 10000;
-console.log("ui smoke:", ok ? "OK" : "FAIL", "|", mine, "|", wait);
+console.log("ui smoke:", ok ? "OK" : "FAIL", "|", mine, "|", wait, "| retry:", retried);
 process.exit(ok ? 0 : 1);

@@ -1,0 +1,20 @@
+# One-click deployment for Render (https://render.com).
+#
+# The game keeps every room in the server process memory, so it MUST run as a single
+# long-lived instance. Serverless platforms (Vercel, Netlify Functions, AWS Lambda) start
+# several short-lived instances; a room created on one instance is invisible to the others,
+# which is exactly the "اتاق یافت نشد" (room not found) error when a friend opens the link.
+#
+# Render runs one instance per service, so the link works. The free plan sleeps after a
+# while without traffic; the host's open WebSocket keeps it awake while waiting in the lobby.
+services:
+  - type: web
+    name: scape-from-atlantis
+    runtime: node
+    plan: free
+    buildCommand: npm ci && npm run build
+    startCommand: node dist/server.js
+    healthCheckPath: /healthz
+    envVars:
+      - key: NODE_VERSION
+        value: 22.23.4

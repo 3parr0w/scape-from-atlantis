@@ -160,9 +160,10 @@ function handle(ws: Sock, m: ClientMsg): void {
       return;
     }
     case "join": {
-      const r = rooms.get(String(m.code || "").toUpperCase());
+      const wanted = String(m.code || "").toUpperCase();
+      const r = rooms.get(wanted);
       if (!r) {
-        bad("اتاقی با این کد یافت نشد.");
+        bad("اتاقی با این کد یافت نشد: " + wanted);
         return;
       }
       if (r.state) {

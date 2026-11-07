@@ -1727,6 +1727,8 @@
   var ENDED = 0;
   var LOBBY = 0;
   var HADSTATE = 0;
+  var PENDING = null;
+  var MAX_JOIN_TRIES = 3;
   var esc = (s) => String(s).replace(
     /[&<>"']/g,
     (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]
@@ -2265,6 +2267,7 @@
     }
   };
   function menu() {
+    PENDING = null;
     OQ = [];
     const s = ST();
     ov(
@@ -2298,27 +2301,28 @@
       Array.from({ length: n }, (_, i) => cleanName(val("#ln" + i)) || PN[i])
     );
   }
-  function onlineMenu(msg) {
+  function onlineMenu(msg, name, code) {
     OQ = [];
-    const q = new URLSearchParams(location.search).get("room") || "";
+    const q = code ?? (new URLSearchParams(location.search).get("room") || "");
     ov(
-      `<h3>\u0628\u0627\u0632\u06CC \u0622\u0646\u0644\u0627\u06CC\u0646</h3><p><input id="nm" placeholder="\u0646\u0627\u0645 \u062A\u0648" maxlength="16"></p><p>\u0633\u0627\u062E\u062A \u0627\u062A\u0627\u0642: <button onclick="mkRoom(2)">\u06F2</button> <button onclick="mkRoom(3)">\u06F3</button> <button onclick="mkRoom(4)">\u06F4</button> \u0646\u0641\u0631\u0647</p><p><input id="cd" placeholder="\u06A9\u062F \u0627\u062A\u0627\u0642" maxlength="5" value="${esc(q)}" style="text-transform:uppercase"> <button onclick="joinRoom()">\u0648\u0631\u0648\u062F</button></p><p style="color:#e63946">${msg ? esc(msg) : ""}</p><p><button class="g" onclick="menu()">\u0628\u0627\u0632\u06AF\u0634\u062A</button></p>`,
+      `<h3>\u0628\u0627\u0632\u06CC \u0622\u0646\u0644\u0627\u06CC\u0646</h3><p><input id="nm" placeholder="\u0646\u0627\u0645 \u062A\u0648" maxlength="16" value="${esc(name ?? "")}"></p><p>\u0633\u0627\u062E\u062A \u0627\u062A\u0627\u0642: <button onclick="mkRoom(2)">\u06F2</button> <button onclick="mkRoom(3)">\u06F3</button> <button onclick="mkRoom(4)">\u06F4</button> \u0646\u0641\u0631\u0647</p><p><input id="cd" placeholder="\u06A9\u062F \u0627\u062A\u0627\u0642" maxlength="5" value="${esc(q)}" style="text-transform:uppercase"> <button onclick="joinRoom()">\u0648\u0631\u0648\u062F</button></p><p style="color:#e63946">${msg ? esc(msg) : ""}</p><p><button class="g" onclick="menu()">\u0628\u0627\u0632\u06AF\u0634\u062A</button></p>`,
       null,
       true
     );
   }
   var val = (id) => ($(id) || {}).value || "";
   function mkRoom(n) {
+    PENDING = null;
     connect({ type: "create", n, name: val("#nm") });
   }
   function joinRoom() {
-    connect({
-      type: "join",
-      code: val("#cd").toUpperCase().trim(),
-      name: val("#nm")
-    });
+    const code = val("#cd").toUpperCase().trim();
+    const name = val("#nm");
+    PENDING = { code, name, tries: 0 };
+    connect({ type: "join", code, name });
   }
   function resume() {
+    PENDING = null;
     const s = ST();
     if (s) connect({ type: "rejoin", code: s.code, token: s.token });
   }
@@ -2372,12 +2376,28 @@
       if (!S && !LOBBY) {
         if (/یافت نشد/.test(m.msg)) setST(null);
         NET = null;
-        return onlineMenu(m.msg);
+        if (PENDING && /اتاقی با این کد یافت نشد/.test(m.msg) && PENDING.tries < MAX_JOIN_TRIES) {
+          PENDING.tries++;
+          const p2 = PENDING;
+          ov(
+            `<h3>\u062F\u0631 \u062D\u0627\u0644 \u0627\u062A\u0635\u0627\u0644\u2026</h3><p>\u0627\u062A\u0627\u0642 \u067E\u06CC\u062F\u0627 \u0646\u0634\u062F\u061B \u062A\u0644\u0627\u0634 \u062F\u0648\u0628\u0627\u0631\u0647 (${p2.tries} \u0627\u0632 ${MAX_JOIN_TRIES})</p>`,
+            null,
+            true
+          );
+          setTimeout(() => {
+            if (PENDING === p2) connect({ type: "join", code: p2.code, name: p2.name });
+          }, 1e3);
+          return;
+        }
+        const p = PENDING;
+        PENDING = null;
+        return onlineMenu(m.msg, p?.name, p?.code);
       }
       log(icon("warn", 16) + " " + m.msg);
       return render();
     }
     if (m.type === "joined") {
+      PENDING = null;
       CODE = m.code;
       ME = m.seat;
       setST({ code: m.code, token: m.token });
