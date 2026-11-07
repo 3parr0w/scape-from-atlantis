@@ -17,7 +17,11 @@ const T: Record<string, [string, string, string]> = {
     "کوسه",
     "فوراً روی دریای همین خانه می‌آید؛ شناگرها می‌میرند.",
   ],
-  whale: [G2.tileIcon("whale", 20), "نهنگ", "فوراً روی دریای همین خانه می‌آید."],
+  whale: [
+    G2.tileIcon("whale", 20),
+    "نهنگ",
+    "فوراً روی دریای همین خانه می‌آید.",
+  ],
   boat: [
     G2.tileIcon("boat", 20),
     "قایق",
@@ -66,7 +70,11 @@ const T: Record<string, [string, string, string]> = {
   ],
 };
 // Persian name of each creature, for status lines and log entries (the icon comes from gfx.ts).
-const CR: Record<string, string> = { serp: "مار دریایی", shark: "کوسه", whale: "نهنگ" };
+const CR: Record<string, string> = {
+  serp: "مار دریایی",
+  shark: "کوسه",
+  whale: "نهنگ",
+};
 const hex = (x: number, y: number, r = SZ): string =>
   [0, 1, 2, 3, 4, 5]
     .map(
@@ -108,7 +116,13 @@ interface Overlay {
 }
 
 let S: State | null = null;
-const ui: UiState = { sel: null, mode: null, pick: null, peek: false, card: null };
+const ui: UiState = {
+  sel: null,
+  mode: null,
+  pick: null,
+  peek: false,
+  card: null,
+};
 let LG: string[] = [],
   OQ: Overlay[] = [],
   NET: Net | null = null,
@@ -130,7 +144,11 @@ const esc = (s: unknown): string =>
   );
 // Display name of a player: the chosen name, or the colour name. Names are sanitised on input/server.
 const nm = (o: number): string => NAMES[o] || PN[o]!;
-const cleanName = (n: string): string => n.replace(/[<>&"'`]/g, "").trim().slice(0, 16);
+const cleanName = (n: string): string =>
+  n
+    .replace(/[<>&"'`]/g, "")
+    .trim()
+    .slice(0, 16);
 const actor = (): number =>
   NET ? ME : S!.pending ? S!.pending.queue[0]! : S!.cur;
 const V = (): ViewState =>
@@ -252,15 +270,35 @@ function onEv(e: Ev): void {
     case "roll":
       showDie(e.face);
       sfx("roll");
-      log(nm(e.pl) + " تاس ریخت: " + G2.creatureIcon(e.face, 20) + " " + CR[e.face]);
+      log(
+        nm(e.pl) +
+          " تاس ریخت: " +
+          G2.creatureIcon(e.face, 20) +
+          " " +
+          CR[e.face],
+      );
       break;
     case "cmove":
       sfx("splash");
-      log(nm(e.pl) + " " + G2.creatureIcon(e.t, 20) + " " + CR[e.t] + " را حرکت داد.");
+      log(
+        nm(e.pl) +
+          " " +
+          G2.creatureIcon(e.t, 20) +
+          " " +
+          CR[e.t] +
+          " را حرکت داد.",
+      );
       break;
     case "defended":
       sfx("shield");
-      log(nm(e.pl) + " " + T[e.tile]![0] + " «" + T[e.tile]![1] + "» را بازی کرد.");
+      log(
+        nm(e.pl) +
+          " " +
+          T[e.tile]![0] +
+          " «" +
+          T[e.tile]![1] +
+          "» را بازی کرد.",
+      );
       break;
     case "capsize":
       fxHit(e.k);
@@ -322,7 +360,12 @@ function defend(p: number): void {
 
 const U = {
   card(t: string): void {
-    const usable = !!S && S.phase === "play" && t !== "rshark" && t !== "rwhale" && !(NET && S.cur !== ME);
+    const usable =
+      !!S &&
+      S.phase === "play" &&
+      t !== "rshark" &&
+      t !== "rwhale" &&
+      !(NET && S.cur !== ME);
     if (usable) {
       ui.mode = ui.mode === t ? null : t;
       ui.sel = null;
@@ -406,12 +449,26 @@ function act(k: string): void {
 
 const WAVE = (id: string, op: number, dx: number, dur: number): string =>
   `<pattern id="${id}" width="30" height="16" patternUnits="userSpaceOnUse"><path d="M0 8q7.5-7 15 0t15 0" fill="none" stroke="#fff" stroke-opacity="${op}" stroke-width="1.5"/><animateTransform attributeName="patternTransform" type="translate" from="0 0" to="${dx} 0" dur="${dur}s" repeatCount="indefinite"/></pattern>`;
-const DEFS = `<defs><radialGradient id="sea" cx="50%" cy="50%" r="75%"><stop offset="0" stop-color="#3b97d1"/><stop offset="1" stop-color="#0d466f"/></radialGradient><linearGradient id="gb" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#f8e8ae"/><stop offset="1" stop-color="#d8b565"/></linearGradient><linearGradient id="gf" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#78c46f"/><stop offset="1" stop-color="#34803f"/></linearGradient><linearGradient id="gm" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#c3c6d0"/><stop offset="1" stop-color="#6b6e80"/></linearGradient><linearGradient id="gs" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#a6e585"/><stop offset="1" stop-color="#4aa653"/></linearGradient>${WAVE("wv", 0.14, 30, 9)}${WAVE("wv2", 0.08, -30, 14)}<filter id="blur" x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur stdDeviation="3.2"/></filter></defs><rect x="-300" y="-300" width="1350" height="1180" fill="url(#sea)"/><rect x="-300" y="-300" width="1350" height="1180" fill="url(#wv)"/><rect x="-300" y="-300" width="1350" height="1180" fill="url(#wv2)" transform="translate(0 8)"/>${[[90, 70], [610, 120], [300, 520], [690, 470], [120, 330], [470, 40], [40, 520]].map(([x, y], n) => `<circle class="twk" cx="${x}" cy="${y}" r="1.6" fill="#fff" style="animation-delay:${n * 0.7}s"/>`).join("")}`;
+const DEFS = `<defs><radialGradient id="sea" cx="50%" cy="50%" r="75%"><stop offset="0" stop-color="#3b97d1"/><stop offset="1" stop-color="#0d466f"/></radialGradient><linearGradient id="gb" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#f8e8ae"/><stop offset="1" stop-color="#d8b565"/></linearGradient><linearGradient id="gf" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#78c46f"/><stop offset="1" stop-color="#34803f"/></linearGradient><linearGradient id="gm" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#c3c6d0"/><stop offset="1" stop-color="#6b6e80"/></linearGradient><linearGradient id="gs" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#a6e585"/><stop offset="1" stop-color="#4aa653"/></linearGradient>${WAVE("wv", 0.14, 30, 9)}${WAVE("wv2", 0.08, -30, 14)}<filter id="blur" x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur stdDeviation="3.2"/></filter></defs><rect x="-300" y="-300" width="1350" height="1180" fill="url(#sea)"/><rect x="-300" y="-300" width="1350" height="1180" fill="url(#wv)"/><rect x="-300" y="-300" width="1350" height="1180" fill="url(#wv2)" transform="translate(0 8)"/>${[
+  [90, 70],
+  [610, 120],
+  [300, 520],
+  [690, 470],
+  [120, 330],
+  [470, 40],
+  [40, 520],
+]
+  .map(
+    ([x, y], n) =>
+      `<circle class="twk" cx="${x}" cy="${y}" r="1.6" fill="#fff" style="animation-delay:${n * 0.7}s"/>`,
+  )
+  .join("")}`;
 let LAYERS = false;
 function layers(): void {
   if (LAYERS) return;
   LAYERS = true;
-  $("#bd").innerHTML = DEFS + '<g id="fg"></g><g id="fx" pointer-events="none"></g>';
+  $("#bd").innerHTML =
+    DEFS + '<g id="fg"></g><g id="fx" pointer-events="none"></g>';
 }
 const tr = (x: number, y: number, z: number): string =>
   `<path d="M${x - 6 * z} ${y}l${6 * z}-${12 * z} ${6 * z} ${12 * z}zM${x - 5 * z} ${y - 5 * z}l${5 * z}-${11 * z} ${5 * z} ${11 * z}z" fill="#1f6b34"/><path d="M${x - 0.8} ${y}h1.6v3h-1.6z" fill="#5a3a1a"/>`;
@@ -433,9 +490,21 @@ const OFF = [
   [0, 18],
 ];
 
-interface Tk { x: number; y: number; k: string; kind: string; col: string }
+interface Tk {
+  x: number;
+  y: number;
+  k: string;
+  kind: string;
+  col: string;
+}
 const artOf = (kind: string, col: string): string =>
-  kind === "person" ? G2.person(col) : kind === "rider" ? `<g transform="scale(.86)">${G2.person(col, true)}</g>` : kind === "boat" ? G2.boat() : G2.creature(kind);
+  kind === "person"
+    ? G2.person(col)
+    : kind === "rider"
+      ? `<g transform="scale(.86)">${G2.person(col, true)}</g>`
+      : kind === "boat"
+        ? G2.boat()
+        : G2.creature(kind);
 let PREV: Map<string, Tk> | null = null,
   PTILES: Record<string, string> | null = null;
 function resetGfx(): void {
@@ -455,16 +524,26 @@ function fxAdd(html: string, ms = 1800): void {
 }
 // Compare this frame with the previous one: slide moved tokens, pop in new ones, sink the dead,
 // sparkle the rescued, and lift taken tiles off the board.
-function diff(cur: Map<string, Tk>, tiles: Record<string, string>, fate: Map<string, string>): void {
-  const prev = PREV, pt = PTILES;
+function diff(
+  cur: Map<string, Tk>,
+  tiles: Record<string, string>,
+  fate: Map<string, string>,
+): void {
+  const prev = PREV,
+    pt = PTILES;
   PREV = cur;
   PTILES = tiles;
   if (!prev || !pt) return;
   const fg = $("#fg");
-  let fx = "", moved = false;
-  const els: ArrayLike<Element> = typeof fg.querySelectorAll === "function" ? fg.querySelectorAll(".tk") : [];
+  let fx = "",
+    moved = false;
+  const els: ArrayLike<Element> =
+    typeof fg.querySelectorAll === "function" ? fg.querySelectorAll(".tk") : [];
   Array.from(els).forEach((el) => {
-    const tid = el.getAttribute("data-tid")!, n = cur.get(tid)!, o = prev.get(tid), cr = n.kind === "serp" || n.kind === "shark" || n.kind === "whale";
+    const tid = el.getAttribute("data-tid")!,
+      n = cur.get(tid)!,
+      o = prev.get(tid),
+      cr = n.kind === "serp" || n.kind === "shark" || n.kind === "whale";
     const st = (el as SVGGElement).style;
     if (!o) {
       el.firstElementChild?.classList.add("pop");
@@ -485,11 +564,14 @@ function diff(cur: Map<string, Tk>, tiles: Record<string, string>, fate: Map<str
       fx += G2.sparkle(o.x, o.y);
       return;
     }
-    fx += `<g style="transform:translate(${o.x}px,${o.y}px)"><g class="gh">${artOf(o.kind, o.col)}</g></g>` + G2.bubbles(o.x, o.y);
+    fx +=
+      `<g style="transform:translate(${o.x}px,${o.y}px)"><g class="gh">${artOf(o.kind, o.col)}</g></g>` +
+      G2.bubbles(o.x, o.y);
   });
   for (const k in pt) {
     if (k in tiles) continue;
-    const { x, y } = POS[k]!, gr = { b: "gb", f: "gf", m: "gm" }[pt[k] as "b" | "f" | "m"];
+    const { x, y } = POS[k]!,
+      gr = { b: "gb", f: "gf", m: "gm" }[pt[k] as "b" | "f" | "m"];
     fx += `<g style="transform:translate(${x}px,${y}px)"><g class="tileout"><polygon points="${hex(0, 4)}" fill="#3a3a3a"/><polygon points="${hex(0, 0)}" fill="url(#${gr})" stroke="#fff" stroke-opacity=".5" stroke-width="1.5" stroke-linejoin="round"/><g transform="translate(0,-13) scale(.8)">${deco(pt[k]!, 1)}</g></g></g>`;
   }
   if (fx) fxAdd(fx);
@@ -560,7 +642,12 @@ function render(): void {
       th += `<polygon points="${hex(x, y + 4)}" fill="${c}" stroke="${c}" stroke-width="3" stroke-linejoin="round" pointer-events="none"/>`;
     }
   }
-  s += (fo ? `<g filter="url(#blur)" opacity=".5" pointer-events="none">${fo}</g>` : "") + sd + th;
+  s +=
+    (fo
+      ? `<g filter="url(#blur)" opacity=".5" pointer-events="none">${fo}</g>`
+      : "") +
+    sd +
+    th;
   for (const k of CELLS) {
     const { x, y } = POS[k]!;
     const t = (v.tiles as Record<string, { type: string }>)[k];
@@ -584,31 +671,63 @@ function render(): void {
     const { x, y } = POS[k]!;
     s += `<polygon class="hl" points="${hex(x, y)}" fill="#ffe066" fill-opacity=".38" stroke="#ffe066" stroke-width="3" pointer-events="none"/>`;
   }
-  interface TokDef { tid: string; kind: string; col: string; data: string; sl: boolean }
+  interface TokDef {
+    tid: string;
+    kind: string;
+    col: string;
+    data: string;
+    sl: boolean;
+  }
   const L: Record<string, TokDef[]> = {};
   const add = (k: string, o: TokDef): void => {
     (L[k] = L[k] || []).push(o);
   };
-  v.boats.forEach((b) => add(b.k, { tid: "b" + b.id, kind: "boat", col: "", data: `data-b="${b.id}"`, sl: sel.b === b.id }));
-  v.creat.forEach((c) => add(c.k, { tid: "c" + c.id, kind: c.t, col: "", data: `data-c="${c.id}"`, sl: sel.c === c.id }));
+  v.boats.forEach((b) =>
+    add(b.k, {
+      tid: "b" + b.id,
+      kind: "boat",
+      col: "",
+      data: `data-b="${b.id}"`,
+      sl: sel.b === b.id,
+    }),
+  );
+  v.creat.forEach((c) =>
+    add(c.k, {
+      tid: "c" + c.id,
+      kind: c.t,
+      col: "",
+      data: `data-c="${c.id}"`,
+      sl: sel.c === c.id,
+    }),
+  );
   const fate = new Map<string, string>();
   v.people.forEach((p) => {
     fate.set("p" + p.id, p.loc.t);
     if (["dead", "safe", "hand"].includes(p.loc.t)) return;
-    add(A.pk(v, p), { tid: "p" + p.id, kind: p.loc.t === "boat" ? "rider" : "person", col: C[p.o]!, data: `data-p="${p.id}"`, sl: sel.p === p.id });
+    add(A.pk(v, p), {
+      tid: "p" + p.id,
+      kind: p.loc.t === "boat" ? "rider" : "person",
+      col: C[p.o]!,
+      data: `data-p="${p.id}"`,
+      sl: sel.p === p.id,
+    });
   });
   const cur = new Map<string, Tk>();
   for (const k in L) {
     const { x, y } = POS[k]!;
     L[k]!.forEach((o, i) => {
-      const px = x + OFF[i % 7]![0]!, py = y + OFF[i % 7]![1]!;
+      const px = x + OFF[i % 7]![0]!,
+        py = y + OFF[i % 7]![1]!;
       cur.set(o.tid, { x: px, y: py, k, kind: o.kind, col: o.col });
       const hit = o.kind === "person" || o.kind === "rider" ? 13 : 15;
       s += `<g class="tk" data-tid="${o.tid}" style="transform:translate(${px}px,${py}px)">${o.sl ? '<circle r="16" fill="#fff8" stroke="#ffe066" stroke-width="3" class="selr" pointer-events="none"/>' : ""}<g class="in" pointer-events="none">${artOf(o.kind, o.col)}</g><circle data-k="${k}" ${o.data} r="${hit}" fill="transparent" style="cursor:pointer"/></g>`;
     });
   }
   const tilesNow: Record<string, string> = {};
-  for (const [k, t] of Object.entries(v.tiles as Record<string, { type: string }>)) tilesNow[k] = t.type;
+  for (const [k, t] of Object.entries(
+    v.tiles as Record<string, { type: string }>,
+  ))
+    tilesNow[k] = t.type;
   layers();
   $("#fg").innerHTML = s;
   diff(cur, tilesNow, fate);
@@ -617,7 +736,10 @@ function render(): void {
     turnOf = v.pending ? v.pending.queue[0]! : v.cur,
     h = (v.hands[me] || []).filter((t): t is ContentType => !!t),
     mine = v.people.filter((p) => p.o === me && p.loc.t === "hand"),
-    waiting = !!NET && ph !== "end" && (v.pending ? v.pending.queue[0] !== ME : v.cur !== ME),
+    waiting =
+      !!NET &&
+      ph !== "end" &&
+      (v.pending ? v.pending.queue[0] !== ME : v.cur !== ME),
     defensive = (t: string): boolean => t === "rshark" || t === "rwhale",
     canUse = (t: string): boolean => ph === "play" && !waiting && !defensive(t),
     UB =
@@ -628,9 +750,14 @@ function render(): void {
         : "";
   let st = "",
     bt = "";
-  if (ph === "setP") st = `یک مهره انتخاب کن و روی کاشی روشن بگذار (${mine.length} مانده).`;
-  if (ph === "setB") st = `یک خانه‌ی دریایی کنار جزیره برای قایق بزن (${v.boatsLeft[me]} مانده).`;
-  if (ph === "play") st = ui.mode ? "مهره یا موجود را انتخاب کن و خانه‌ی روشن را بزن." : "کاشی دستی بازی کن، یا بدون کاشی ادامه بده.";
+  if (ph === "setP")
+    st = `یک مهره انتخاب کن و روی کاشی روشن بگذار (${mine.length} مانده).`;
+  if (ph === "setB")
+    st = `یک خانه‌ی دریایی کنار جزیره برای قایق بزن (${v.boatsLeft[me]} مانده).`;
+  if (ph === "play")
+    st = ui.mode
+      ? "مهره یا موجود را انتخاب کن و خانه‌ی روشن را بزن."
+      : "کاشی دستی بازی کن، یا بدون کاشی ادامه بده.";
   if (ph === "move") st = "مهره یا قایقت را انتخاب کن و خانه‌ی روشن را بزن.";
   if (ph === "take") st = "یکی از کاشی‌های روشن را بردار.";
   if (ph === "roll") st = "تاس موجودات را بریز.";
@@ -638,21 +765,45 @@ function render(): void {
     st = `تاس: ${CR[v.roll!]} ${v.creat.some((c) => c.t === v.roll) ? "— موجود را انتخاب و حرکت بده." : "(روی تخته نیست)"}`;
   if (ph === "end") st = "بازی تمام شد.";
   if (!waiting) {
-    if (ph === "setP") bt = `<button class="g" onclick="U.peek()">${ui.peek ? "پنهان کردن اعداد" : "نمایش اعداد من"}</button>`;
-    if (ph === "play") bt = UB + `<button class="pri" onclick="U.skip()">${h.some(canUse) ? "بدون کاشی ادامه بده" : "ادامه"}</button>`;
-    if (ph === "move") bt = UB + '<button class="pri" onclick="U.done()">پایان حرکت‌ها</button>';
+    if (ph === "setP")
+      bt = `<button class="g" onclick="U.peek()">${ui.peek ? "پنهان کردن اعداد" : "نمایش اعداد من"}</button>`;
+    if (ph === "play")
+      bt =
+        UB +
+        `<button class="pri" onclick="U.skip()">${h.some(canUse) ? "بدون کاشی ادامه بده" : "ادامه"}</button>`;
+    if (ph === "move")
+      bt = UB + '<button class="pri" onclick="U.done()">پایان حرکت‌ها</button>';
     if (ph === "roll")
       bt =
         '<button class="pri big" onclick="U.roll()">' +
         G2.icon("dice", 20) +
         " ریختن تاس</button>";
-    if (ph === "creature") bt = v.creat.some((c) => c.t === v.roll) ? '<button class="g" onclick="U.skipC()">رد کردن</button>' : '<button class="pri" onclick="U.skipC()">پایان نوبت</button>';
+    if (ph === "creature")
+      bt = v.creat.some((c) => c.t === v.roll)
+        ? '<button class="g" onclick="U.skipC()">رد کردن</button>'
+        : '<button class="pri" onclick="U.skipC()">پایان نوبت</button>';
   }
-  if (waiting) st = v.pending ? "منتظر تصمیم " + nm(v.pending.queue[0]!) + "…" : "نوبت " + nm(v.cur) + " است…";
+  if (waiting)
+    st = v.pending
+      ? "منتظر تصمیم " + nm(v.pending.queue[0]!) + "…"
+      : "نوبت " + nm(v.cur) + " است…";
   // step indicator (+ whose turn) -------------------------------------------------------------
   const setup = ph === "setP" || ph === "setB";
-  const steps = setup ? ["مهره‌ها", "قایق‌ها"] : ["کاشی", "حرکت", "برداشت", "تاس"];
-  const idx = ph === "setP" ? 0 : ph === "setB" ? 1 : ph === "play" ? 0 : ph === "move" ? 1 : ph === "take" ? 2 : 3;
+  const steps = setup
+    ? ["مهره‌ها", "قایق‌ها"]
+    : ["کاشی", "حرکت", "برداشت", "تاس"];
+  const idx =
+    ph === "setP"
+      ? 0
+      : ph === "setB"
+        ? 1
+        : ph === "play"
+          ? 0
+          : ph === "move"
+            ? 1
+            : ph === "take"
+              ? 2
+              : 3;
   // The rolled creature is shown as a chip beside the step bar, with the same art as the board.
   const rollChip =
     ph === "creature" && v.roll
@@ -662,19 +813,39 @@ function render(): void {
     ph === "end"
       ? ""
       : `<span class="who" style="background:${C[turnOf]}">${esc(nm(turnOf))}</span>${rollChip}<ol class="stp">` +
-        steps.map((l, n) => `<li class="${n < idx ? "dn" : n === idx ? "on" : ""}"><i>${n + 1}</i>${l}${ph === "move" && n === 1 ? ` <s class="pips">${[0, 1, 2].map((i) => G2.pip(i < v.moves)).join("")}</s>` : ""}</li>`).join("") +
+        steps
+          .map(
+            (l, n) =>
+              `<li class="${n < idx ? "dn" : n === idx ? "on" : ""}"><i>${n + 1}</i>${l}${ph === "move" && n === 1 ? ` <s class="pips">${[0, 1, 2].map((i) => G2.pip(i < v.moves)).join("")}</s>` : ""}</li>`,
+          )
+          .join("") +
         "</ol>";
   // own hand as cards (always visible, so you know what you hold); meeples to place during setup ----
   let tray = "";
   if (ph === "setP" && !waiting) {
     const pk0 = ui.pick ?? (mine[0] || {}).id;
-    tray = mine.map((p) => `<button class="tc pm${pk0 === p.id ? " sel" : ""}" onclick="U.pick(${p.id})"><svg viewBox="-12 -14 24 26" width="34" height="38">${G2.person(C[me]!)}</svg><b>${ui.peek ? p.n : "?"}</b></button>`).join("");
+    tray = mine
+      .map(
+        (p) =>
+          `<button class="tc pm${pk0 === p.id ? " sel" : ""}" onclick="U.pick(${p.id})"><svg viewBox="-12 -14 24 26" width="34" height="38">${G2.person(C[me]!)}</svg><b>${ui.peek ? p.n : "?"}</b></button>`,
+      )
+      .join("");
   } else if (h.length) {
-    tray = h.map((t) => `<button class="tc ${defensive(t) ? "d" : "u"}${ui.mode === t ? " sel" : ""}${canUse(t) || defensive(t) ? "" : " dim"}" onclick="U.card('${t}')"><svg viewBox="-26 -20 52 40" width="56" height="43">${G2.cardArt(t)}</svg><span>${T[t]![1]}</span>${defensive(t) ? "<em>دفاعی</em>" : ""}</button>`).join("");
+    tray = h
+      .map(
+        (t) =>
+          `<button class="tc ${defensive(t) ? "d" : "u"}${ui.mode === t ? " sel" : ""}${canUse(t) || defensive(t) ? "" : " dim"}" onclick="U.card('${t}')"><svg viewBox="-26 -20 52 40" width="56" height="43">${G2.cardArt(t)}</svg><span>${T[t]![1]}</span>${defensive(t) ? "<em>دفاعی</em>" : ""}</button>`,
+      )
+      .join("");
   }
   const owner = NET ? "تو" : esc(nm(me));
-  $("#hand").innerHTML = tray ? `<div class="th">${setup ? "مهره‌های" : "کاشی‌های"} ${owner} (${setup ? mine.length : h.length})</div><div class="tr">${tray}</div>` : "";
-  $("#cd").innerHTML = ui.card && h.includes(ui.card as ContentType) ? `<b>${T[ui.card]![1]}</b> — ${T[ui.card]![2]}` : "";
+  $("#hand").innerHTML = tray
+    ? `<div class="th">${setup ? "مهره‌های" : "کاشی‌های"} ${owner} (${setup ? mine.length : h.length})</div><div class="tr">${tray}</div>`
+    : "";
+  $("#cd").innerHTML =
+    ui.card && h.includes(ui.card as ContentType)
+      ? `<b>${T[ui.card]![1]}</b> — ${T[ui.card]![2]}`
+      : "";
   $("#st").textContent = st;
   $("#bt").innerHTML = bt;
   // player cards ------------------------------------------------------------------------------
@@ -683,11 +854,18 @@ function render(): void {
       const ps = v.people.filter((p) => p.o === o),
         f = (x: (p: any) => boolean): number => ps.filter(x).length,
         off = !!NET && CONN[o] === false,
-        tags = [NET && o === ME ? "تو" : "", o === turnOf ? "نوبت" : "", off ? "قطع" : ""].filter(Boolean).join(" · ");
+        tags = [
+          NET && o === ME ? "تو" : "",
+          o === turnOf ? "نوبت" : "",
+          off ? "قطع" : "",
+        ]
+          .filter(Boolean)
+          .join(" · ");
       return `<div class="pc${o === turnOf ? " cur" : ""}${off ? " off" : ""}" style="--c:${C[o]}"><span class="av">${esc(Array.from(nm(o))[0] || "?")}</span><div class="pi"><b>${esc(nm(o))}</b><small>${tags}</small><div class="ps"><span><b>${f((p) => p.loc.t === "safe")}</b>نجات</span><span><b>${f((p) => !["safe", "dead", "hand"].includes(p.loc.t))}</b>خطر</span><span><b>${f((p) => p.loc.t === "dead")}</b>تلف</span><span><b>${v.hands[o]!.length}</b>کاشی</span></div></div></div>`;
     })
     .join("");
-  $("#lg").innerHTML = (NET ? "کد اتاق: <b>" + esc(CODE) + "</b><br>" : "") + LG.join("<br>");
+  $("#lg").innerHTML =
+    (NET ? "کد اتاق: <b>" + esc(CODE) + "</b><br>" : "") + LG.join("<br>");
   $("#lgs").textContent =
     (NET ? "[" + CODE + "] " : "") + (LG[0] ? plain(LG[0]) : "گزارش");
 }
@@ -747,14 +925,21 @@ function localNames(n: number): void {
   OQ = [];
   ov(
     "<h3>نام بازیکن‌ها</h3>" +
-      Array.from({ length: n }, (_, i) => `<p><i class="dot" style="background:${C[i]}"></i><input id="ln${i}" placeholder="${PN[i]}" maxlength="16"></p>`).join("") +
+      Array.from(
+        { length: n },
+        (_, i) =>
+          `<p><i class="dot" style="background:${C[i]}"></i><input id="ln${i}" placeholder="${PN[i]}" maxlength="16"></p>`,
+      ).join("") +
       `<p><button onclick="startLocal(${n})">شروع بازی</button> <button class="g" onclick="localMenu()">بازگشت</button></p>`,
     null,
     true,
   );
 }
 function startLocal(n: number): void {
-  go(n, Array.from({ length: n }, (_, i) => cleanName(val("#ln" + i)) || PN[i]!));
+  go(
+    n,
+    Array.from({ length: n }, (_, i) => cleanName(val("#ln" + i)) || PN[i]!),
+  );
 }
 function onlineMenu(msg?: string): void {
   OQ = [];
@@ -835,7 +1020,7 @@ function onNet(m: any): void {
       NET = null;
       return onlineMenu(m.msg);
     }
-      log(G2.icon("warn", 16) + " " + m.msg);
+    log(G2.icon("warn", 16) + " " + m.msg);
     return render();
   }
   if (m.type === "joined") {
@@ -986,7 +1171,12 @@ const syncSound = (): void => {
     m = isMuted();
   b.innerHTML = G2.icon(m ? "mute" : "sound", 22);
   b.setAttribute("aria-pressed", m ? "true" : "false");
-  b.setAttribute("title", m ? "صدا خاموش است — برای روشن کردن بزن" : "صدا روشن است — برای خاموش کردن بزن");
+  b.setAttribute(
+    "title",
+    m
+      ? "صدا خاموش است — برای روشن کردن بزن"
+      : "صدا روشن است — برای خاموش کردن بزن",
+  );
 };
 syncSound();
 $("#zm").onclick = (): void => {

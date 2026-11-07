@@ -44,26 +44,67 @@ const at = (x: number, y: number, inner: string): string =>
   `<g style="transform:translate(${x}px,${y}px)">${inner}</g>`;
 const rnd = (a: number): number => (Math.random() - 0.5) * a;
 export const ripple = (x: number, y: number): string =>
-  at(x, y, `<circle class="rip" r="10"/><circle class="rip" r="10" style="animation-delay:.18s"/>`);
+  at(
+    x,
+    y,
+    `<circle class="rip" r="10"/><circle class="rip" r="10" style="animation-delay:.18s"/>`,
+  );
 export const bubbles = (x: number, y: number): string =>
-  at(x, y, [0, 1, 2, 3, 4].map((i) => `<circle class="bub" r="${1.4 + (i % 3)}" style="--dx:${rnd(16).toFixed(1)}px;animation-delay:${i * 0.09}s"/>`).join(""));
+  at(
+    x,
+    y,
+    [0, 1, 2, 3, 4]
+      .map(
+        (i) =>
+          `<circle class="bub" r="${1.4 + (i % 3)}" style="--dx:${rnd(16).toFixed(1)}px;animation-delay:${i * 0.09}s"/>`,
+      )
+      .join(""),
+  );
 export const sparkle = (x: number, y: number): string =>
-  at(x, y, [0, 1, 2, 3, 4, 5].map((i) => `<path class="spk" d="M0-5L1.4-1.4 5 0 1.4 1.4 0 5-1.4 1.4-5 0-1.4-1.4Z" fill="#ffe066" style="--dx:${rnd(30).toFixed(1)}px;animation-delay:${i * 0.07}s"/>`).join(""));
+  at(
+    x,
+    y,
+    [0, 1, 2, 3, 4, 5]
+      .map(
+        (i) =>
+          `<path class="spk" d="M0-5L1.4-1.4 5 0 1.4 1.4 0 5-1.4 1.4-5 0-1.4-1.4Z" fill="#ffe066" style="--dx:${rnd(30).toFixed(1)}px;animation-delay:${i * 0.07}s"/>`,
+      )
+      .join(""),
+  );
 const SP = (() => {
   let d = "";
   for (let i = 0; i <= 60; i++) {
-    const a = i * 0.35, r = 3 + i * 0.9;
-    d += (i ? "L" : "M") + (Math.cos(a) * r).toFixed(1) + " " + (Math.sin(a) * r).toFixed(1);
+    const a = i * 0.35,
+      r = 3 + i * 0.9;
+    d +=
+      (i ? "L" : "M") +
+      (Math.cos(a) * r).toFixed(1) +
+      " " +
+      (Math.sin(a) * r).toFixed(1);
   }
   return d;
 })();
 export const whirl = (x: number, y: number): string =>
-  at(x, y, `<g class="whirl"><path d="${SP}" fill="none" stroke="#0a4a7a" stroke-width="6" stroke-linecap="round" opacity=".35" transform="rotate(40)"/><path d="${SP}" fill="none" stroke="#e8f8ff" stroke-width="3" stroke-linecap="round" opacity=".9"/></g>`);
+  at(
+    x,
+    y,
+    `<g class="whirl"><path d="${SP}" fill="none" stroke="#0a4a7a" stroke-width="6" stroke-linecap="round" opacity=".35" transform="rotate(40)"/><path d="${SP}" fill="none" stroke="#e8f8ff" stroke-width="3" stroke-linecap="round" opacity=".9"/></g>`,
+  );
 export const embers = (x: number, y: number): string =>
-  at(x, y, `<circle class="blast" r="30" fill="#ff7b00"/>` + Array.from({ length: 16 }, (_, i) => `<circle class="emb" r="${(2 + Math.random() * 2).toFixed(1)}" fill="${["#ff9f1c", "#ff5400", "#ffd166"][i % 3]}" style="--dx:${rnd(90).toFixed(1)}px;animation-delay:${(i * 0.05).toFixed(2)}s"/>`).join(""));
+  at(
+    x,
+    y,
+    `<circle class="blast" r="30" fill="#ff7b00"/>` +
+      Array.from(
+        { length: 16 },
+        (_, i) =>
+          `<circle class="emb" r="${(2 + Math.random() * 2).toFixed(1)}" fill="${["#ff9f1c", "#ff5400", "#ffd166"][i % 3]}" style="--dx:${rnd(90).toFixed(1)}px;animation-delay:${(i * 0.05).toFixed(2)}s"/>`,
+      ).join(""),
+  );
 
 // ---- tile-card art (hand cards, reveal and defence dialogs) ----
-const sc = (inner: string, z: number, x = 0, y = 0): string => `<g transform="translate(${x} ${y}) scale(${z})">${inner}</g>`;
+const sc = (inner: string, z: number, x = 0, y = 0): string =>
+  `<g transform="translate(${x} ${y}) scale(${z})">${inner}</g>`;
 const dolphin = (): string =>
   `<path d="M-17 5C-12-9 4-12 13-5L20-9 18-1 12 2C6 8-7 10-17 5Z" fill="#4f9fd6" stroke="#174a73" stroke-width="1.4" stroke-linejoin="round"/><path d="M-14 6C-6 9 6 8 12 3C6 9-7 11-14 6Z" fill="#dff1fb"/><path d="M-3-7L2-14 4-5Z" fill="#3b86bd" stroke="#174a73" stroke-width="1.1" stroke-linejoin="round"/><path d="M-17 5L-22 0-21 6-23 11Z" fill="#3b86bd" stroke="#174a73" stroke-width="1.1" stroke-linejoin="round"/><circle cx="9" cy="-2" r="1.2" fill="#111"/>`;
 const windArt = (): string =>
@@ -72,7 +113,11 @@ const volcano = (): string =>
   `<path d="M-19 15L-6-6H6L19 15Z" fill="#6b4a3a" stroke="#3a2418" stroke-width="1.4" stroke-linejoin="round"/><path d="M-6-6L-3-10H3L6-6Q0-3-6-6Z" fill="#ff7b00"/><circle cx="-3" cy="-14" r="3" fill="#aaa" opacity=".7"/><circle cx="3" cy="-18" r="4" fill="#bbb" opacity=".55"/><path d="M-1-10L-4-3 0-5 2-1" stroke="#ffd166" stroke-width="1.4" fill="none"/>`;
 const shield = (): string =>
   `<g transform="translate(9 3)"><path d="M0-8L8-6V1C8 6 4 9 0 11C-4 9-8 6-8 1V-6Z" fill="#ffd166" stroke="#7a5a10" stroke-width="1.3" stroke-linejoin="round"/><path d="M0-4V6M-4 0H4" stroke="#7a5a10" stroke-width="1.4"/></g>`;
-const MVT: Record<string, string> = { mserp: "serp", mshark: "shark", mwhale: "whale" };
+const MVT: Record<string, string> = {
+  mserp: "serp",
+  mshark: "shark",
+  mwhale: "whale",
+};
 export const cardArt = (t: string): string => {
   switch (t) {
     case "shark":
@@ -91,15 +136,21 @@ export const cardArt = (t: string): string => {
     case "mserp":
     case "mshark":
     case "mwhale":
-      return sc(creature(MVT[t]!), 0.85, 0, -3) + `<path d="M-13 14h26M-13 14l4-3M-13 14l4 3M13 14l-4-3M13 14l-4 3" stroke="#fff" stroke-width="1.7" fill="none" stroke-linecap="round"/>`;
+      return (
+        sc(creature(MVT[t]!), 0.85, 0, -3) +
+        `<path d="M-13 14h26M-13 14l4-3M-13 14l4 3M13 14l-4-3M13 14l-4 3" stroke="#fff" stroke-width="1.7" fill="none" stroke-linecap="round"/>`
+      );
     case "rshark":
     case "rwhale":
-      return sc(creature(t === "rshark" ? "shark" : "whale"), 0.8, -5, -2) + shield();
+      return (
+        sc(creature(t === "rshark" ? "shark" : "whale"), 0.8, -5, -2) + shield()
+      );
     default:
       return "";
   }
 };
-export const cardSvg = (t: string, w = 150): string => `<svg viewBox="-26 -20 52 40" width="${w}" height="${Math.round((w * 40) / 52)}">${cardArt(t)}</svg>`;
+export const cardSvg = (t: string, w = 150): string =>
+  `<svg viewBox="-26 -20 52 40" width="${w}" height="${Math.round((w * 40) / 52)}">${cardArt(t)}</svg>`;
 
 // ---- inline icons -------------------------------------------------------------------------
 // Every glyph the UI used to take from an emoji/symbol font lives here instead, as SVG: colour
