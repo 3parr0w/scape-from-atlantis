@@ -1,5 +1,6 @@
 // Tiny WebAudio sound effects (no audio files). Starts on the first user gesture; mute is remembered.
 let ctx: AudioContext | null = null;
+let master: GainNode | null = null;
 let muted = false;
 try {
   muted = localStorage.getItem("atlantis-mute") === "1";
@@ -12,6 +13,16 @@ const ac = (): AudioContext | null => {
   if (ctx.state === "suspended") void ctx.resume();
   return ctx;
 };
+// One master bus for every effect, so a future music/SFX mix or ducking has a single node to act on.
+let busReady = false;
+const bus = (c: AudioContext): GainNode => {
+  master ??= c.createGain();
+  if (!busReady) {
+    master.connect(c.destination);
+    busReady = true;
+  }
+  return master;
+};
 function tone(f0: number, f1: number, dur: number, type: OscillatorType = "sine", vol = 0.12, delay = 0): void {
   const c = ac();
   if (!c) return;
@@ -21,7 +32,7 @@ function tone(f0: number, f1: number, dur: number, type: OscillatorType = "sine"
   o.frequency.exponentialRampToValueAtTime(Math.max(f1, 20), t + dur);
   g.gain.setValueAtTime(vol, t);
   g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
-  o.connect(g).connect(c.destination);
+  o.connect(g).connect(bus(c));
   o.start(t);
   o.stop(t + dur + 0.02);
 }
@@ -35,7 +46,7 @@ function noise(dur: number, vol = 0.1, hp = 800, delay = 0): void {
   f.type = "highpass";
   f.frequency.value = hp;
   g.gain.value = vol;
-  s.connect(f).connect(g).connect(c.destination);
+  s.connect(f).connect(g).connect(bus(c));
   s.start(t);
 }
 export function sfx(name: string): void {
@@ -62,3 +73,11 @@ export const toggleMute = (): boolean => {
   return muted;
 };
 export const isMuted = (): boolean => muted;
+
+// Mobile/desktop lifecycle: suspend the audio device while the tab is hidden and resume on return.
+export const pauseAudio = (): void => {
+  if (ctx && ctx.state === "running") void ctx.suspend();
+};
+export const resumeAudio = (): void => {
+  if (ctx && ctx.state === "suspended" && !muted) void ctx.resume();
+};

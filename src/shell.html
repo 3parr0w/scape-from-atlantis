@@ -11,6 +11,8 @@
     <link
       href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;800&display=swap"
       rel="stylesheet"
+      media="print"
+      onload="this.media = 'all'"
     />
     <style>
       /* ---- design tokens ---------------------------------------------------------------
@@ -178,12 +180,15 @@
       [dir="rtl"] .ic-rtl {
         transform: scaleX(-1);
       }
+      /* A row centred along the bottom edge: the four safe islands sit in the board corners, and the old
+         left-hand column covered the bottom-left one on phones. */
       #zc {
         position: absolute;
-        left: var(--s3);
+        left: 50%;
         bottom: var(--s3);
+        transform: translateX(-50%);
         display: flex;
-        flex-direction: column;
+        flex-direction: row;
         gap: var(--s2);
       }
       /* Icon-only controls keep the 44px minimum hit area, not the 40px the glyphs used. */
@@ -342,21 +347,6 @@
           transform: scale(1);
         }
       }
-      .cr {
-        animation: bob 2.4s ease-in-out infinite;
-      }
-      .bt {
-        animation: bob 3.2s ease-in-out infinite;
-      }
-      @keyframes bob {
-        0%,
-        100% {
-          transform: translateY(0);
-        }
-        50% {
-          transform: translateY(-1.8px);
-        }
-      }
       .selr {
         animation: selr 1s ease-in-out infinite;
         transform-box: fill-box;
@@ -373,15 +363,6 @@
       @keyframes hl {
         50% {
           fill-opacity: 0.62;
-        }
-      }
-      .twk {
-        animation: twk 3.4s ease-in-out infinite;
-        opacity: 0;
-      }
-      @keyframes twk {
-        50% {
-          opacity: 0.9;
         }
       }
       .rip {
@@ -554,9 +535,6 @@
         }
       }
       @media (prefers-reduced-motion: reduce) {
-        .cr,
-        .bt,
-        .twk,
         .hl,
         .selr {
           animation: none;
@@ -632,14 +610,6 @@
       }
       .ps span b {
         font-size: 13px;
-      }
-      .mini {
-        display: inline-block;
-        width: 9px;
-        height: 12px;
-        border-radius: 2px;
-        background: linear-gradient(135deg, #e9b44c, #c2410c);
-        border: 1px solid #fff8;
       }
       #stph {
         display: flex;
@@ -800,8 +770,13 @@
       <div id="main">
         <div id="sc"></div>
         <div id="bw">
-          <div id="die"></div>
-          <svg id="bd" viewBox="0 0 750 580"></svg>
+          <div id="die" aria-hidden="true"></div>
+          <svg
+            id="bd"
+            viewBox="0 0 750 580"
+            role="img"
+            aria-label="تخته‌ی بازی"
+          ></svg>
           <div id="zc">
             <button
               id="zi"
@@ -834,18 +809,20 @@
       <div id="side">
         <div id="bar" class="box">
           <div id="stph"></div>
-          <div id="st"></div>
+          <div id="st" aria-live="polite"></div>
           <div id="hand"></div>
           <div id="cd"></div>
           <div id="bt"></div>
         </div>
         <details id="lgd" class="box">
           <summary id="lgs">گزارش</summary>
-          <div id="lg"></div>
+          <div id="lg" aria-live="polite"></div>
         </details>
       </div>
     </div>
-    <div id="ov"><div id="ovb"></div></div>
+    <div id="ov" role="dialog" aria-modal="true" aria-label="گفت‌وگو">
+      <div id="ovb"></div>
+    </div>
     <script>
       /*BUNDLE*/
     </script>

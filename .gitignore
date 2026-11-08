@@ -1,3 +1,6 @@
 node_modules
 data
 dist
+
+# Local clone used by the skills CLI (source for skills-lock.json)
+.skills-tmp/

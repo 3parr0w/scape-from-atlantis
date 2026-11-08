@@ -63,17 +63,43 @@ const clean = (n: unknown): string =>
     .slice(0, 16);
 const tok = (): string => crypto.randomBytes(16).toString("hex");
 
-function load(): void {
+const SAVE_VERSION = 1;
+interface SavedRoom {
+  code: string;
+  n: number;
+  state: State | null;
+  updated: number;
+  seats: { token: string; name: string }[];
+}
+interface SaveFile {
+  version: number;
+  rooms: SavedRoom[];
+}
+
+function readRooms(file: string): SavedRoom[] | null {
   try {
-    const raw = JSON.parse(fs.readFileSync(DATA, "utf8")) as Room[];
-    for (const r of raw)
+    const raw = JSON.parse(fs.readFileSync(file, "utf8")) as
+      | SaveFile
+      | SavedRoom[];
+    // Accept both the versioned envelope and the old bare-array file.
+    const list = Array.isArray(raw) ? raw : raw.rooms;
+    return Array.isArray(list) ? list : null;
+  } catch {
+    return null; // first run / unreadable file
+  }
+}
+
+function load(): void {
+  // Prefer the current file; fall back to the previous good one if a crash happened between the
+  // two renames inside save().
+  const list = readRooms(DATA) ?? readRooms(DATA + ".bak");
+  if (!list) return;
+  for (const r of list)
+    if (r && typeof r.code === "string" && Array.isArray(r.seats))
       rooms.set(r.code, {
         ...r,
         seats: r.seats.map((s) => ({ ...s, ws: null })),
       });
-  } catch {
-    /* first run / unreadable file */
-  }
 }
 
 let tm: ReturnType<typeof setTimeout> | undefined;
@@ -82,18 +108,26 @@ const save = (): void => {
   tm = setTimeout(() => {
     try {
       fs.mkdirSync(path.dirname(DATA), { recursive: true });
-      fs.writeFileSync(
-        DATA,
-        JSON.stringify(
-          [...rooms.values()].map((r) => ({
-            code: r.code,
-            n: r.n,
-            state: r.state,
-            updated: r.updated,
-            seats: r.seats.map(({ token, name }) => ({ token, name })),
-          })),
-        ),
-      );
+      const body = JSON.stringify({
+        version: SAVE_VERSION,
+        rooms: [...rooms.values()].map((r) => ({
+          code: r.code,
+          n: r.n,
+          state: r.state,
+          updated: r.updated,
+          seats: r.seats.map(({ token, name }) => ({ token, name })),
+        })),
+      });
+      // Atomic replace: write a temp file, keep the previous file as .bak, then rename. A crash
+      // mid-write can never leave a truncated room file behind.
+      const tmp = DATA + ".tmp";
+      fs.writeFileSync(tmp, body);
+      try {
+        if (fs.existsSync(DATA)) fs.renameSync(DATA, DATA + ".bak");
+      } catch {
+        /* the temp file is still authoritative */
+      }
+      fs.renameSync(tmp, DATA);
     } catch (e) {
       console.error("save failed:", (e as Error).message);
     }

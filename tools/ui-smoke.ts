@@ -132,7 +132,10 @@ const ok =
   sent.length === 1 &&
   sent[0].type === "action" &&
   sent[0].a.t === "roll" &&
-  el["#fg"]!._h.length > 10000;
+  // The static board is cached in #fg and only rebuilt when a tile is removed; the moving
+  // parts (highlights + tokens) live in #tk and are rebuilt on every render.
+  el["#fg"]!._h.length > 5000 &&
+  el["#tk"]!._h.length > 1000;
 console.log(
   "ui smoke:",
   ok ? "OK" : "FAIL",
