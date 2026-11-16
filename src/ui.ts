@@ -222,13 +222,17 @@ function render(): void {
   const steps = setup
     ? ["مهره‌ها", "قایق‌ها"]
     : ["کاشی", "حرکت", "برداشت", "تاس"];
+  const hasPlayableTiles = ph === "play" && h.some(canUse);
+  const playSteps = hasPlayableTiles ? steps : ["حرکت", "برداشت", "تاس"];
   const idx =
     ph === "setP"
       ? 0
       : ph === "setB"
         ? 1
         : ph === "play"
-          ? 0
+          ? hasPlayableTiles
+            ? 0
+            : 0
           : ph === "move"
             ? 1
             : ph === "take"
@@ -239,11 +243,12 @@ function render(): void {
     ph === "creature" && v.roll
       ? `<span class="rollc" title="${CR[v.roll]}" aria-label="${CR[v.roll]}">${G2.creatureIcon(v.roll, 22)}</span>`
       : "";
+    const displaySteps = ph === "play" && !hasPlayableTiles ? playSteps : steps;
   $("#stph").innerHTML =
     ph === "end"
       ? ""
       : `<span class="who" style="background:${C[turnOf]}">${esc(nm(turnOf))}</span>${rollChip}<ol class="stp">` +
-        steps
+          displaySteps
           .map(
             (l, n) =>
               `<li class="${n < idx ? "dn" : n === idx ? "on" : ""}"><i>${n + 1}</i>${l}${ph === "move" && n === 1 ? ` <s class="pips">${[0, 1, 2].map((i) => G2.pip(i < v.moves)).join("")}</s>` : ""}</li>`,
